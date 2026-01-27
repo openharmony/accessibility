@@ -147,7 +147,7 @@ namespace accessibility {
 
     export native function isOpenAccessibilitySync(): boolean;
 
-    export native function isScreenReaderOpenSync(): boolean;
+    export native function isScreenReaderOpenSync(): boolean; 
 
     export native function getTouchModeSync(): string;
 
