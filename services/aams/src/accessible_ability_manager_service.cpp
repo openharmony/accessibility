@@ -4466,6 +4466,7 @@ void AccessibleAbilityManagerService::InitResource(bool needReInit)
     std::string script = locale.GetScript();
     std::string region = locale.GetRegion();
 
+    std::lock_guard<ffrt::mutex> lock(resourceMapMutex_);
     resConfig->SetLocaleInfo(language.c_str(), script.c_str(), region.c_str());
     resourceManager->UpdateResConfig(*resConfig);
     if (!resourceManager->AddResource(HAP_PATH)) {
@@ -4486,6 +4487,7 @@ void AccessibleAbilityManagerService::InitResource(bool needReInit)
 
 std::string &AccessibleAbilityManagerService::GetResource(const std::string &resourceName)
 {
+    std::lock_guard<ffrt::mutex> lock(resourceMapMutex_);
     return ResourceMap[resourceName];
 }
 
