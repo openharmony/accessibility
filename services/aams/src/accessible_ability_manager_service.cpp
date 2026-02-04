@@ -140,6 +140,7 @@ namespace {
     constexpr int32_t XCOLLIE_TIMEOUT = 6; // s
     constexpr int QUANTITY = 2; // plural string
     constexpr int32_t BROKER_UID = 5557;
+    constexpr int32_t SECURITY_COMPONENT_UID = 3050;
 
     static const std::map<std::string, int32_t> AccessibilityConfigTable = {
         {"HIGH_CONTRAST_TEXT", HIGH_CONTRAST_TEXT},
@@ -1343,6 +1344,10 @@ ErrCode AccessibleAbilityManagerService::RegisterElementOperatorByParameter(cons
 
 ErrCode AccessibleAbilityManagerService::DeregisterElementOperatorByWindowId(int32_t windowId)
 {
+    ErrCode ret = CheckDeregisterTokenId(windowId);
+    if (ret != RET_OK) {
+        return ret;
+    }
     if (!handler_) {
         HILOG_ERROR("handler_ is nullptr.");
         return RET_ERR_NULLPTR;
@@ -1381,6 +1386,84 @@ ErrCode AccessibleAbilityManagerService::DeregisterElementOperatorByWindowId(int
 }
 
 ErrCode AccessibleAbilityManagerService::DeregisterElementOperatorByWindowIdAndTreeId(int32_t windowId,
+    const int32_t treeId)
+{
+    ErrCode ret = CheckDeregisterTokenId(windowId);
+    if (ret != RET_OK) {
+        return ret;
+    }
+    if (!handler_) {
+        HILOG_ERROR("handler_ is nullptr.");
+        return RET_ERR_NULLPTR;
+    }
+
+    handler_->PostTask([=]() {
+        HILOG_INFO("Deregister windowId[%{public}d], treeId[%{public}d] start", windowId, treeId);
+        RecycleTreeId(treeId);
+        sptr<AccessibilityAccountData> accountData = GetCurrentAccountData();
+        if (!accountData) {
+            HILOG_ERROR("accountData is nullptr.");
+            return;
+        }
+        sptr<AccessibilityWindowConnection> connection = accountData->GetAccessibilityWindowConnection(windowId);
+        if (connection == nullptr) {
+            HILOG_WARN("The operation of windowId[%{public}d] has not been registered.", windowId);
+            return;
+        }
+        StopCallbackWait(windowId, treeId);
+
+        RemoveTreeDeathRecipient(windowId, treeId, connection);
+        // remove connection when all proxy and children tree proxy deregistered
+        if (connection->GetProxy() == nullptr && connection->GetCardProxySize() == 0) {
+            accountData->RemoveAccessibilityWindowConnection(windowId);
+        }
+        Singleton<AccessibilityWindowManager>::GetInstance().RemoveTreeIdWindowIdPair(treeId);
+        }, "TASK_DEREGISTER_ELEMENT_OPERATOR");
+    return RET_OK;
+}
+
+ErrCode AccessibleAbilityManagerService::InnerDeregisterElementOperatorByWindowId(int32_t windowId)
+{
+    if (!handler_) {
+        HILOG_ERROR("handler_ is nullptr.");
+        return RET_ERR_NULLPTR;
+    }
+    bool isBroker = IsBroker();
+    handler_->PostTask([=]() {
+        HILOG_INFO("Deregister windowId[%{public}d]", windowId);
+        sptr<AccessibilityAccountData> accountData = GetCurrentAccountData();
+        if (!accountData) {
+            HILOG_ERROR("accountData is nullptr.");
+            return;
+        }
+        sptr<AccessibilityWindowConnection> connection = accountData->GetAccessibilityWindowConnection(windowId);
+        if (!connection) {
+            HILOG_WARN("The operation of windowId[%{public}d] has not been registered.", windowId);
+            return;
+        }
+        if (isBroker && connection->IsAnco()) {
+            connection->ResetBrokerProxy();
+            return;
+        }
+        StopCallbackWait(windowId);
+        connection->ResetProxy();
+        connection->ResetBrokerProxy();
+        std::vector<int32_t> treeIds {};
+        connection->GetAllTreeId(treeIds);
+        for (int32_t treeId : treeIds) {
+            RecycleTreeId(treeId);
+            StopCallbackWait(windowId, treeId);
+            RemoveTreeDeathRecipient(windowId, treeId, connection);
+        }
+        accountData->RemoveAccessibilityWindowConnection(windowId);
+        if (windowId == SCENE_BOARD_WINDOW_ID) {
+            Singleton<AccessibilityWindowManager>::GetInstance().ClearSceneBoard();
+        }
+        }, "TASK_DEREGISTER_ELEMENT_OPERATOR");
+    return RET_OK;
+}
+
+ErrCode AccessibleAbilityManagerService::InnerDeregisterElementOperatorByWindowIdAndTreeId(const int32_t windowId,
     const int32_t treeId)
 {
     if (!handler_) {
@@ -1442,6 +1525,29 @@ bool AccessibleAbilityManagerService::IsSystemApp() const
 bool AccessibleAbilityManagerService::IsBroker() const
 {
     return IPCSkeleton::GetCallingUid() == BROKER_UID;
+}
+
+ErrCode AccessibleAbilityManagerService::CheckDeregisterTokenId(int32_t windowId)
+{
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    sptr<AccessibilityAccountData> accountData = GetCurrentAccountData();
+    if (accountData == nullptr) {
+        HILOG_ERROR("accountData is nullptr");
+        return RET_ERR_CONNECTION_EXIST;
+    }
+    int32_t realId =
+        Singleton<AccessibilityWindowManager>::GetInstance().ConvertToRealWindowId(windowId, FOCUS_TYPE_INVALID);
+    sptr<AccessibilityWindowConnection> connection = accountData->GetAccessibilityWindowConnection(realId);
+    if (connection == nullptr) {
+        HILOG_ERROR("connection is empty.");
+        return RET_ERR_REGISTER_EXIST;
+    }
+    uint32_t expectTokenId = connection->GetTokenIdMap(SINGLE_TREE_ID);
+    if (tokenId != expectTokenId) {
+        HILOG_ERROR("tokenId error!");
+        return RET_ERR_TOKEN_ID;
+    }
+    return RET_OK;
 }
 
 bool AccessibleAbilityManagerService::CheckPermission(const std::string &permission) const
@@ -4420,6 +4526,17 @@ void AccessibleAbilityManagerService::OnModeChanged(uint32_t mode)
 int32_t AccessibleAbilityManagerService::SetEnhanceConfig(const AccessibilitySecCompRawdata& rawData)
 {
     HILOG_INFO();
+    AccessTokenID callerToken = IPCSkeleton::GetCallingTokenID();
+    ATokenTypeEnum tokenType = AccessTokenKit::GetTokenTypeFlag(callerToken);
+    if (tokenType != TOKEN_NATIVE) {
+        HILOG_ERROR("caller is not native.");
+        return RET_ERR_TOKEN_ID;
+    }
+
+    if (IPCSkeleton::GetCallingUid() != SECURITY_COMPONENT_UID) {
+        HILOG_ERROR("caller is not security component service.");
+        return RET_ERR_TOKEN_ID;
+    }
     int32_t result = AccessibilitySecurityComponentManager::SetEnhanceConfig(rawData);
     return result;
 }
