@@ -115,6 +115,10 @@ public:
 
     ErrCode DeregisterElementOperatorByWindowIdAndTreeId(const int32_t windowId, const int32_t treeId) override;
 
+    ErrCode InnerDeregisterElementOperatorByWindowId(int32_t windowId);
+
+    ErrCode InnerDeregisterElementOperatorByWindowIdAndTreeId(const int32_t windowId, const int32_t treeId);
+
     ErrCode DeRegisterCaptionObserver(const sptr<IRemoteObject>& obj) override;
 
     ErrCode DeRegisterEnableAbilityListsObserver(const sptr<IRemoteObject>& obj) override;
@@ -386,6 +390,7 @@ private:
     bool IsApp() const;
     bool IsSystemApp() const;
     bool IsBroker() const;
+    ErrCode CheckDeregisterTokenId(int32_t windowId);
     sptr<AccessibilityWindowConnection> GetRealIdConnection();
     bool FindFocusedElementByConnection(sptr<AccessibilityWindowConnection> connection,
         AccessibilityElementInfo &elementInfo);
