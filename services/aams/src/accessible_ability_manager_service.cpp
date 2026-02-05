@@ -1448,6 +1448,7 @@ ErrCode AccessibleAbilityManagerService::InnerDeregisterElementOperatorByWindowI
         StopCallbackWait(windowId);
         connection->ResetProxy();
         connection->ResetBrokerProxy();
+
         std::vector<int32_t> treeIds {};
         connection->GetAllTreeId(treeIds);
         for (int32_t treeId : treeIds) {
@@ -1456,9 +1457,6 @@ ErrCode AccessibleAbilityManagerService::InnerDeregisterElementOperatorByWindowI
             RemoveTreeDeathRecipient(windowId, treeId, connection);
         }
         accountData->RemoveAccessibilityWindowConnection(windowId);
-        if (windowId == SCENE_BOARD_WINDOW_ID) {
-            Singleton<AccessibilityWindowManager>::GetInstance().ClearSceneBoard();
-        }
         }, "TASK_DEREGISTER_ELEMENT_OPERATOR");
     return RET_OK;
 }
