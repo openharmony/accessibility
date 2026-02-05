@@ -856,9 +856,6 @@ RetError AccessibleAbilityChannel::GetElementOperator(
     }
     if (!connection->GetUseBrokerFlag() && treeId > 0) {
         elementOperator = connection->GetCardProxy(treeId);
-    } else if (connection->IsAnco() && connection->GetUseBrokerFlag()
-        && treeId >= 0 && connection->GetCardProxy(treeId)) {
-        elementOperator = connection->GetCardProxy(treeId);
     } else {
         elementOperator = connection->GetProxy();
     }
