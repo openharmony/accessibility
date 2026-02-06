@@ -75,15 +75,17 @@ napi_value NAccessibilityClient::IsScreenReaderOpenSync(napi_env env, napi_callb
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv = nullptr;
     bool status = false;
-    napi_get_cb_info(env, info, &argc, &argv, nullptr, nullptr);
-    if (argc != ARGS_SIZE_ZERO) {
-        break;
-    }
-    auto asaClient = AccessibilitySystemAbilityClient::GetInstance();
-    if (asaClient == nullptr) {
-        break;
-    }
-    asaClient->IsScreenReaderEnabled(status);
+    do {
+        napi_get_cb_info(env, info, &argc, &argv, nullptr, nullptr);
+        if (argc != ARGS_SIZE_ZERO) {
+            break;
+        }
+        auto asaClient = AccessibilitySystemAbilityClient::GetInstance();
+        if (asaClient == nullptr) {
+            break;
+        }
+        asaClient->IsScreenReaderEnabled(status);
+    } wwhile (0);
     napi_value result = nullptr;
     napi_get_boolean(env, status, &result);
     return result;
