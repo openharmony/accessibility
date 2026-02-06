@@ -85,7 +85,7 @@ napi_value NAccessibilityClient::IsScreenReaderOpenSync(napi_env env, napi_callb
             break;
         }
         asaClient->IsScreenReaderEnabled(status);
-    } wwhile (0);
+    } while (0);
     napi_value result = nullptr;
     napi_get_boolean(env, status, &result);
     return result;
