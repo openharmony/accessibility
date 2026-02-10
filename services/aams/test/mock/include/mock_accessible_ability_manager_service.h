@@ -42,6 +42,9 @@ public:
     MOCK_METHOD1(DeregisterElementOperatorByWindowId, ErrCode(const int32_t windowId));
     MOCK_METHOD2(DeregisterElementOperatorByWindowIdAndTreeId, ErrCode(const int32_t windowId,
         const int32_t treeId));
+    MOCK_METHOD1(InnerDeregisterElementOperatorByWindowId, ErrCode(const int32_t windowId));
+    MOCK_METHOD2(InnerDeregisterElementOperatorByWindowIdAndTreeId, ErrCode(const int32_t windowId,
+        const int32_t treeId));
     MOCK_METHOD2(GetCaptionProperty, ErrCode(CaptionPropertyParcel& caption, bool isPermissionRequired));
     MOCK_METHOD2(SetCaptionProperty, ErrCode(const CaptionPropertyParcel& caption, bool isPermissionRequired));
     MOCK_METHOD2(SetCaptionState, ErrCode(bool state, bool isPermissionRequired));
