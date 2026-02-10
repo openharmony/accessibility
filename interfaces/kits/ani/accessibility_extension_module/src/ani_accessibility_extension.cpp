@@ -931,6 +931,10 @@ void SetKeyPropertyPart1(ani_env *env, ani_object object, const std::shared_ptr<
     std::vector<int32_t> pressedKeys = keyEvent->GetPressedKeys();
     for (const auto &pressedKeyCode : pressedKeys) {
         keyobj = CreatKeyObject(env);
+        if (keyobj == nullptr) {
+            HILOG_ERROR("creat keyobj failed");
+            continue;
+        }
         std::optional<MMI::KeyEvent::KeyItem> pressedKeyItem = keyEvent->GetKeyItem(pressedKeyCode);
         GetKeyValue(env, keyobj, pressedKeyItem);
         jsArray.push_back(keyobj);
