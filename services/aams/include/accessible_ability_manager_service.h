@@ -135,7 +135,6 @@ public:
 
     ErrCode EnableAbility(const std::string &name, const uint32_t capabilities,
         const bool connectCallBackFlag) override;
-    ErrCode EnableAbility(const std::string &name, const uint32_t capabilities) override;
     ErrCode GetEnabledAbilities(std::vector<std::string> &enabledAbilities) override;
     RetError SetCurtainScreenUsingStatus(bool isEnable);
     ErrCode CheckExtensionAbilityPermission(std::string& processName) override;

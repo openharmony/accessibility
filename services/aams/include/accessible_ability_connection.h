@@ -80,7 +80,6 @@ public:
     void DisconnectAbility();
     void HandleNoEventHandler(const AppExecFwk::ElementName &element);
     bool RegisterAppStateObserverToAMS(const std::string& appBundleName, const std::string& abilityName,
-        const std::string& abilityName,
         const sptr<AccessibilityAccountData>& accountData);
     void SetConnectionKey(const std::string& key) { connectionKey_ = key; }
     std::string GetConnectionKey() { return connectionKey_; }
