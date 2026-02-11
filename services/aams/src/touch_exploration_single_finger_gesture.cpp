@@ -366,15 +366,15 @@ void TouchExploration::HandlePassingThroughState(MMI::PointerEvent &event)
 
     // the last finger is lifted
     if ((event.GetPointerIds().size() == static_cast<uint32_t>(PointerCount::POINTER_COUNT_1)) &&
-        (!pointerIterm.IsPressed())) {
+        (!pointerItem.IsPressed())) {
         SetCurrentState(TouchExplorationState::TOUCH_INIT);
     }
 }
 
 void TouchExploration::HandleInvalidState(MMI::PointerEvent &event)
 {
-    MMI::PointerEvent::PointerItem pointerIterm {};
-    event.GetPointerItem(event.GetPointerId(), pointerIterm);
+    MMI::PointerEvent::PointerItem pointerItem {};
+    event.GetPointerItem(event.GetPointerId(), pointerItem);
 
     if (event.GetPointerAction() == MMI::PointerEvent::POINTER_ACTION_MOVE) {
         SendScreenWakeUpEvent(event);

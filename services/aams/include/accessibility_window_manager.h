@@ -84,6 +84,8 @@ public:
 
     void RemoveTreeIdWindowIdPair(int32_t treeId);
 
+    bool SendPointerEventForHover(const std::shared_ptr<MMI::PointerEvent>& pointerEvent);
+
     // return 0 when not found
     int32_t FindTreeIdWindowIdPair(int32_t treeId);
 
