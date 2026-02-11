@@ -116,8 +116,6 @@ namespace {
     constexpr int32_t TREE_ID_INVALID = 0;
     constexpr uint32_t ELEMENT_MOVE_BIT = 40;
     constexpr int32_t SINGLE_TREE_ID = 0;
-    constexpr int32_t SHORT_KEY_TIMEOUT_BEFORE_USE = 3000; // ms
-    constexpr int32_t SHORT_KEY_TIMEOUT_AFTER_USE = 1000; // ms
     constexpr int32_t WINDOW_ID_INVALID = -1;
     constexpr int64_t ELEMENT_ID_INVALID = -1;
     enum SCREENREADER_STATE : int32_t {
