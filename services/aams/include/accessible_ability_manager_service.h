@@ -115,7 +115,13 @@ public:
 
     ErrCode DeregisterElementOperatorByWindowIdAndTreeId(const int32_t windowId, const int32_t treeId) override;
 
+    ErrCode InnerDeregisterElementOperatorByWindowId(int32_t windowId);
+
+    ErrCode InnerDeregisterElementOperatorByWindowIdAndTreeId(const int32_t windowId, const int32_t treeId);
+
     ErrCode DeRegisterCaptionObserver(const sptr<IRemoteObject>& obj) override;
+
+    ErrCode DeRegisterConfigObserver(const sptr<IRemoteObject>& obj) override;
 
     ErrCode DeRegisterEnableAbilityListsObserver(const sptr<IRemoteObject>& obj) override;
 
@@ -127,6 +133,8 @@ public:
 
     ErrCode GetCaptionState(bool &state, bool isPermissionRequired) override;
 
+    ErrCode EnableAbility(const std::string &name, const uint32_t capabilities,
+        const bool connectCallBackFlag) override;
     ErrCode EnableAbility(const std::string &name, const uint32_t capabilities) override;
     ErrCode GetEnabledAbilities(std::vector<std::string> &enabledAbilities) override;
     RetError SetCurtainScreenUsingStatus(bool isEnable);
@@ -163,8 +171,8 @@ public:
     ErrCode GetReadableRules(std::string &readableRules) override;
     ErrCode IsInnerWindowRootElement(int64_t elementId, bool &state) override;
 private:
-    int32_t focusWindowId_ = -1;
-    int64_t focusElementId_ = -1;
+    std::atomic<int32_t> focusWindowId_ = -1;
+    std::atomic<int64_t> focusElementId_ = -1;
     std::atomic<int> requestId_ = REQUEST_ID_INIT;
 public:
     /* For inner modules */
@@ -336,7 +344,6 @@ public:
     ErrCode GetAllConfigs(AccessibilityConfigData& configData, CaptionPropertyParcel& caption) override;
 
     ErrCode RegisterConfigObserver(const sptr<IAccessibleAbilityManagerConfigObserver> &callback) override;
-    ErrCode DeRegisterConfigObserver(const sptr<IRemoteObject>& obj) override;
     void UpdateConfigState();
     void UpdateAudioBalance();
     void UpdateBrightnessDiscount();
@@ -377,7 +384,7 @@ public:
     void InitMagnification();
     void OnModeChanged(uint32_t mode);
 
-    RetError UpdateUITestConfigureEvents(std::vector<uint32_t> needEvents);
+    RetError ConfigureEvents(std::vector<uint32_t> needEvents);
 
 private:
     void StopCallbackWait(int32_t windowId);
@@ -386,6 +393,7 @@ private:
     bool IsApp() const;
     bool IsSystemApp() const;
     bool IsBroker() const;
+    ErrCode CheckDeregisterTokenId(int32_t windowId);
     sptr<AccessibilityWindowConnection> GetRealIdConnection();
     bool FindFocusedElementByConnection(sptr<AccessibilityWindowConnection> connection,
         AccessibilityElementInfo &elementInfo);
@@ -459,9 +467,7 @@ private:
         ffrt::mutex stateObserversMutex_;
     };
 
-    RetError InnerEnableAbility(
-        const std::string &name,
-        const uint32_t capabilities,
+    RetError InnerEnableAbility(const std::string &name, const uint32_t capabilities,
         const std::string callerBundleName = "");
     RetError InnerDisableAbility(const std::string &name);
 
@@ -488,6 +494,8 @@ private:
     void OnScreenMagnificationStateChanged();
     void RegisterScreenMagnificationState();
     void OnScreenMagnificationTypeChanged();
+    void SetConfigScreenMagnificationScale(float scale);
+    void OnScreenMagnificationScaleChanged();
     void RegisterScreenMagnificationType();
     void OnFlashReminderSwitchChanged();
     void RegisterFlashReminderSwitch();
@@ -497,12 +505,14 @@ private:
     void UpdateVoiceRecognitionState();
     void SubscribeOsAccount();
     void UnsubscribeOsAccount();
-    bool InvalidHoverEnterEvent(AccessibilityEventInfo &event);
+    void RegisterNotificationState();
 
     int32_t ApplyTreeId();
     void RecycleTreeId(int32_t treeId);
+    void RecycleEventHandler();
     std::shared_ptr<AccessibilityDatashareHelper> GetCurrentAcountDatashareHelper();
     void OnFocusedEvent(const AccessibilityEventInfo &eventInfo);
+    bool InvalidHoverEnterEvent(AccessibilityEventInfo &event);
 
     bool isReady_ = false;
     bool isPublished_ = false;
@@ -560,6 +570,7 @@ private:
     std::shared_ptr<MagnificationManager> magnificationManager_ = nullptr;
     bool isResourceInit_ = false;
     std::shared_ptr<AccountSubscriber> accountSubscriber_ = nullptr;
+    ffrt::mutex resourceMapMutex_;
 };
 } // namespace Accessibility
 } // namespace OHOS
