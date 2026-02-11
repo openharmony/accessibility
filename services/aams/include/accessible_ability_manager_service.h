@@ -167,8 +167,8 @@ public:
     ErrCode GetReadableRules(std::string &readableRules) override;
     ErrCode IsInnerWindowRootElement(int64_t elementId, bool &state) override;
 private:
-    int32_t focusWindowId_ = -1;
-    int64_t focusElementId_ = -1;
+    std::atomic<int32_t> focusWindowId_ = -1;
+    std::atomic<int64_t> focusElementId_ = -1;
     std::atomic<int> requestId_ = REQUEST_ID_INIT;
 public:
     /* For inner modules */
@@ -565,6 +565,7 @@ private:
     std::shared_ptr<MagnificationManager> magnificationManager_ = nullptr;
     bool isResourceInit_ = false;
     std::shared_ptr<AccountSubscriber> accountSubscriber_ = nullptr;
+    ffrt::mutex resourceMapMutex_;
 };
 } // namespace Accessibility
 } // namespace OHOS
