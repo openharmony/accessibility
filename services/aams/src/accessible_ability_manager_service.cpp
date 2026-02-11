@@ -584,7 +584,7 @@ ErrCode AccessibleAbilityManagerService::SendEvent(const AccessibilityEventInfoP
         HILOG_ERROR("Parameters check failed!");
         return RET_ERR_NULLPTR;
     }
-    if (eventType == TYPE_VIEW_ANNOUNCE_FOR_ACCESSIBILITY && uiEvent.GetBundleName() == "com.huawei.shell_assistant") {
+    if (eventType == TYPE_VIEW_ANNOUNCE_FOR_ACCESSIBILITY) {
         sptr<AccessibilityAccountData> accountData = GetCurrentAccountData();
         if (!accountData) {
             return RET_ERR_NULLPTR;
