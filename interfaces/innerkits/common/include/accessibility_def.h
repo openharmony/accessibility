@@ -276,7 +276,7 @@ enum EventType : uint32_t {
     TYPE_PAGE_OPEN = 0x20000000,
     TYPE_ELEMENT_INFO_CHANGE = 0x40000000,
     TYPE_VIEW_ANNOUNCE_FOR_ACCESSIBILITY_NOT_INTERRUPT = 0x40000001,
-    TYPE_VIEW_REQUEST_FOCUS_FOR_ACCESSIBILITY_NOT_INTERRUPT = 0x40000002,
+    TYPE_VIEW_REQUEST_FOCUS_FOR_ACCESSIBILITY_NOT_INTERRUP = 0x40000002,
     TYPE_VIEW_SCROLLING_EVENT = 0x40000003,
     TYPE_PAGE_ACTIVE = 0x40000004,
     TYPE_MAX_NUM = 0x80000000,
@@ -380,6 +380,7 @@ struct ResourceInfo {
     uint32_t resourceId;
     std::string bundleName;
     std::string moduleName;
+    std::vector<std::tuple<int32_t, std::string>> params;
 };
 
 enum SEARCH_TYPE : uint32_t {
@@ -408,7 +409,7 @@ const std::map<std::string, EventType> EvtTypeTable = {
     {"requestFocusForAccessibility", EventType::TYPE_VIEW_REQUEST_FOCUS_FOR_ACCESSIBILITY},
     {"announceForAccessibility", EventType::TYPE_VIEW_ANNOUNCE_FOR_ACCESSIBILITY},
     {"announceForAccessibilityNotInterrupt", EventType::TYPE_VIEW_ANNOUNCE_FOR_ACCESSIBILITY_NOT_INTERRUPT},
-    {"requestFocusForAccessibilityNotInterrupt", EventType::TYPE_VIEW_REQUEST_FOCUS_FOR_ACCESSIBILITY_NOT_INTERRUPT},
+    {"requestFocusForAccessibilityNotInterrupt", EventType::TYPE_VIEW_REQUEST_FOCUS_FOR_ACCESSIBILITY_NOT_INTERRUP},
     {"pageContentUpdate", EventType::TYPE_PAGE_CONTENT_UPDATE},
     {"pageStateUpdate", EventType::TYPE_PAGE_STATE_UPDATE},
     {"pageOpen", EventType::TYPE_PAGE_OPEN},
@@ -488,20 +489,20 @@ constexpr float COMPLEX_UNIT_MM_CONVERSION = 1.0f / 25.4f;
 constexpr int32_t MM_PER_CM = 10;
 const std::string UI_TEST_ABILITY_NAME = "hdcd";
 
-const char ERROR_MESSAGE_PARAMETER_ERROR[] = "Parameter error. Possible causes:"
+inline constexpr const char* ERROR_MESSAGE_PARAMETER_ERROR = "Parameter error. Possible causes:"
     "1. Mandatory parameters are left unspecified; 2. Incorrect parameter types; 3. Parameter verification failed.";
-const char ERROR_MESSAGE_NO_PERMISSION[] = "Permission verification failed."
+inline constexpr const char* ERROR_MESSAGE_NO_PERMISSION = "Permission verification failed."
     "The application does not have the permission required to call the API.";
-const char ERROR_MESSAGE_NOT_SYSTEM_APP[] = "Permission verification failed."
+inline constexpr const char* ERROR_MESSAGE_NOT_SYSTEM_APP = "Permission verification failed."
     "A non-system application calls a system API.";
-const char ERROR_MESSAGE_NO_RIGHT[] = "No accessibility permission to perform the operation";
-const char ERROR_MESSAGE_SYSTEM_ABNORMALITY[] = "System abnormality";
-const char ERROR_MESSAGE_PROPERTY_NOT_EXIST[] = "This property does not exist";
-const char ERROR_MESSAGE_ACTION_NOT_SUPPORT[] = "This action is not supported";
-const char ERROR_MESSAGE_INVALID_BUNDLE_NAME_OR_ABILITY_NAME[] = "Invalid bundle name or ability name";
-const char ERROR_MESSAGE_TARGET_ABILITY_ALREADY_ENABLED[] = "Target ability already enabled";
-const char ERROR_MESSAGE_ENABLE_MAGNIFICATION[] = "Failed to trigger magnification.";
-const char ERROR_MESSAGE_CAPABILITY_NOT_SUPPORT[] = "Capability not supported."
+inline constexpr const char* ERROR_MESSAGE_NO_RIGHT = "No accessibility permission to perform the operation";
+inline constexpr const char* ERROR_MESSAGE_SYSTEM_ABNORMALITY = "System abnormality";
+inline constexpr const char* ERROR_MESSAGE_PROPERTY_NOT_EXIST = "This property does not exist";
+inline constexpr const char* ERROR_MESSAGE_ACTION_NOT_SUPPORT = "This action is not supported";
+inline constexpr const char* ERROR_MESSAGE_INVALID_BUNDLE_NAME_OR_ABILITY_NAME = "Invalid bundle name or ability name";
+inline constexpr const char* ERROR_MESSAGE_TARGET_ABILITY_ALREADY_ENABLED = "Target ability already enabled";
+inline constexpr const char* ERROR_MESSAGE_ENABLE_MAGNIFICATION = "Failed to trigger magnification.";
+inline constexpr const char* ERROR_MESSAGE_CAPABILITY_NOT_SUPPORT = "Capability not supported."
     "Failed to call the API due to limited device capabilities.";
 
 enum class NAccessibilityErrorCode : int32_t {
@@ -645,15 +646,38 @@ const std::vector<std::string> ACTION_NAMES = {
     "recentTask",              //AccessibilityAction.RECENT_TASK=17
     "notificationCenter",      //AccessibilityAction.NOTIFICATION_CENTER=18
     "controlCenter",           //AccessibilityAction.CONTROL_CENTER=19
-    "common",                  //AccessibilityAction.COMMON=20
-    "spanClick"                //AccessibilityAction.SPAN_CLICK=21
+    "spanClick"                //AccessibilityAction.SPAN_CLICK=20
 };
 
 #define RETURN_FALSE_IF_NULL(sptr)                     \
     do {                                               \
         if ((sptr) == nullptr) {                       \
-            HILOG_ERROR("%s is nullptr", #sptr);       \
+            HILOG_ERROR("%s is nullptr!", #sptr);      \
             return false;                              \
+        }                                              \
+    } while (0)
+
+#define RETURN_IF_NULL(sptr)                           \
+    do {                                               \
+        if ((sptr) == nullptr) {                       \
+            HILOG_ERROR("%s is nullptr!", #sptr);      \
+            return;                              \
+        }                                              \
+    } while (0)
+
+#define RETURN_NULL_IF_FALSE(value)                           \
+    do {                                               \
+        if ((value) == false) {                       \
+            HILOG_ERROR("false value!");      \
+            return nullptr;                              \
+        }                                              \
+    } while (0)
+
+#define RETURN_IF_FALSE(value)                           \
+    do {                                               \
+        if ((value) == false) {                       \
+            HILOG_ERROR("false value!");      \
+            return;                              \
         }                                              \
     } while (0)
 #endif // ACCESSIBILITY_DEFINE_H
