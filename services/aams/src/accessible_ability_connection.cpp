@@ -258,7 +258,6 @@ void AccessibleAbilityConnection::OnAbilityConnectDone(const AppExecFwk::Element
         }
 
         if (!connection->GetConnectionKey().empty()) {
-            HILOG_INFO("Register to AMS");
             if (!obj->RegisterAppStateObserverToAMS(appBundleName, abilityName, accountData)) {
                 HILOG_ERROR("Failed to register app state observer for %{public}s", bundleName.c_str());
             }
