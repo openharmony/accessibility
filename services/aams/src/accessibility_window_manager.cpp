@@ -107,6 +107,15 @@ AccessibilityWindowManager::~AccessibilityWindowManager()
     DeregisterWindowListener();
 }
 
+bool AccessibilityWindowManager::SendPointerEventForHover(const std::shared_ptr<MMI::PointerEvent>& pointerEvent)
+{
+    if (pointerEvent == nullptr) {
+        return RET_ERR_NULLPTR;
+    }
+    return true;
+}
+
+
 void AccessibilityWindowManager::RegisterWindowListener(const std::shared_ptr<AppExecFwk::EventHandler> &handler)
 {
     DeregisterWindowListener();
