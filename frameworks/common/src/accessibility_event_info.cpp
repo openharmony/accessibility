@@ -194,7 +194,7 @@ RetError ExtraEventInfo::SetExtraEventInfo(const std::string keyStr, const std::
         HILOG_DEBUG("SetExtraEventInfo: size is extraEventValueStr : [%{public}zu]",
             extraEventValueStr_.size());
     } else {
-        HILOG_ERROR("Failed to SetExtraEventInfo.");~
+        HILOG_ERROR("Failed to SetExtraEventInfo.");
         return RET_ERR_FAILED;
     }
     return RET_OK;
