@@ -719,6 +719,10 @@ private:
         }
 
         auto context = context_.lock();
+        if (!context) {
+            HILOG_ERROR("context is released");
+            return nullptr;
+        }
         RetError ret = context->InjectGesture(gesturePath);
         if (ret != RET_OK) {
             HILOG_ERROR("result error, ret %{public}d", ret);
@@ -863,6 +867,10 @@ private:
         bool isEnable = false;
         napi_get_value_bool(env, info.argv[PARAM0], &isEnable);
         auto context = context_.lock();
+        if (!context) {
+            HILOG_ERROR("context is released");
+            return nullptr;
+        }
         RetError ret = context->EnableScreenCurtain(isEnable);
         if (ret != RET_OK) {
             HILOG_ERROR("result error, ret %{public}d", ret);
@@ -950,7 +958,7 @@ private:
         return result;
     }
 
-    napi_value OnGetDefaultFocusedElementIds(napi_env env, NapiCallbackInfo& info)
+    napi_value OnGetDefaultFocusedElementIds(napi_env env, NapiCallbackInfo &info)
     {
         HILOG_INFO();
         int32_t windowId = INVALID_WINDOW_ID;
@@ -1033,6 +1041,10 @@ private:
         }
  
         auto context = context_.lock();
+        if (!context) {
+            HILOG_ERROR("context is released");
+            return nullptr;
+        }
         RetError ret = context->HoldRunningLock();
         if (ret != RET_OK) {
             HILOG_ERROR("result error, ret %{public}d", ret);
@@ -1057,6 +1069,10 @@ private:
         }
  
         auto context = context_.lock();
+        if (!context) {
+            HILOG_ERROR("context is released");
+            return nullptr;
+        }
         RetError ret = context->UnholdRunningLock();
         if (ret != RET_OK) {
             HILOG_ERROR("result error, ret %{public}d", ret);
@@ -1074,6 +1090,7 @@ private:
         HILOG_INFO();
         std::string type;
         napi_ref ref = nullptr;
+        RetError ret = RET_OK;
 
         if (info.argc >= ARGS_SIZE_TWO) {
             if (info.argv[PARAM0] != nullptr && IsNapiString(env, info.argv[PARAM0])) {
@@ -1083,16 +1100,34 @@ private:
                 napi_create_reference(env, info.argv[PARAM1], 1, &ref);
             } else {
                 HILOG_ERROR("argc one is not function");
+                ret = RET_ERR_INVALID_PARAM;
             }
         } else {
             HILOG_ERROR("Not enough params");
+            ret = RET_ERR_INVALID_PARAM;
+        }
+
+        if (ret != RET_OK) {
+            NAccessibilityErrMsg errMsg = QueryRetMsg(ret);
+            napi_throw(env, CreateJsError(env, static_cast<int32_t>(errMsg.errCode), errMsg.message));
+            return CreateJsUndefined(env);
         }
 
         if (type == "preDisconnect" && ref != nullptr) {
             std::shared_ptr<DisconnectCallback> callback = std::make_shared<NapiDisconnectCallback>(env, ref);
-            context_.lock()->RegisterDisconnectCallback(callback);
+            auto context = context_.lock();
+            if (!context) {
+                HILOG_ERROR("context is released");
+                return nullptr;
+            }
+            ret = context->RegisterDisconnectCallback(callback);
         }
-        return nullptr;
+        if (ret != RET_OK) {
+            NAccessibilityErrMsg errMsg = QueryRetMsg(ret);
+            napi_throw(env, CreateJsError(env, static_cast<int32_t>(errMsg.errCode), errMsg.message));
+            return CreateJsUndefined(env);
+        }
+        return CreateJsUndefined(env);
     }
 
     napi_value OnUnRegisterCallback(napi_env env, NapiCallbackInfo &info)
@@ -1100,6 +1135,7 @@ private:
         HILOG_INFO();
         std::string type;
         napi_ref ref = nullptr;
+        RetError ret = RET_OK;
 
         if (info.argc >= ARGS_SIZE_ONE) {
             if (info.argv[PARAM0] != nullptr && IsNapiString(env, info.argv[PARAM0])) {
@@ -1109,23 +1145,50 @@ private:
                 napi_create_reference(env, info.argv[PARAM1], 1, &ref);
             } else {
                 HILOG_ERROR("argc one is not function");
+                ret = RET_ERR_INVALID_PARAM;
             }
         } else {
             HILOG_ERROR("Not enough params");
+            ret = RET_ERR_INVALID_PARAM;
+        }
+        if (ret != RET_OK) {
+            NAccessibilityErrMsg errMsg = QueryRetMsg(ret);
+            napi_throw(env, CreateJsError(env, static_cast<int32_t>(errMsg.errCode), errMsg.message));
+            return CreateJsUndefined(env);
         }
 
         if (type == "preDisconnect") {
             std::shared_ptr<DisconnectCallback> callback = std::make_shared<NapiDisconnectCallback>(env, ref);
-            context_.lock()->UnRegisterDisconnectCallback(callback);
+            auto context = context_.lock();
+            if (!context) {
+                HILOG_ERROR("context is released");
+                return nullptr;
+            }
+            ret = context->UnRegisterDisconnectCallback(callback);
         }
-        return nullptr;
+        if (ret != RET_OK) {
+            NAccessibilityErrMsg errMsg = QueryRetMsg(ret);
+            napi_throw(env, CreateJsError(env, static_cast<int32_t>(errMsg.errCode), errMsg.message));
+            return CreateJsUndefined(env);
+        }
+        return CreateJsUndefined(env);
     }
 
     napi_value OnNotifyDisconnect(napi_env env, NapiCallbackInfo &info)
     {
         HILOG_INFO();
-        context_.lock()->NotifyDisconnect();
-        return nullptr;
+        auto context = context_.lock();
+        if (!context) {
+            HILOG_ERROR("context is released");
+            return nullptr;
+        }
+        RetError ret = context->NotifyDisconnect();
+        if (ret != RET_OK) {
+            NAccessibilityErrMsg errMsg = QueryRetMsg(ret);
+            napi_throw(env, CreateJsError(env, static_cast<int32_t>(errMsg.errCode), errMsg.message));
+            return CreateJsUndefined(env);
+        }
+        return CreateJsUndefined(env);
     }
 };
 } // namespace
