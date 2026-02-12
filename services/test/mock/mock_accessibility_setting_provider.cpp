@@ -129,8 +129,8 @@ RetError AccessibilitySettingProvider::GetStringValue(const std::string& key, st
     return RET_OK;
 }
 
-RetError AccessibilitySettingProvider::PutStringValue
-    (const std::string& key, const std::string& value, bool needNotify)
+RetError AccessibilitySettingProvider::GetStringValue(const std::string& key,
+    std::string& value, const bool readOnlyFlag)
 {
     (void)key;
     (void)value;

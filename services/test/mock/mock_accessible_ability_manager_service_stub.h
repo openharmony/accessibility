@@ -154,6 +154,7 @@ private:
     bool invertColor_ = false;
     bool captionState_ = false;
     bool screenReaderState_ = false;
+    bool animationOff_ = false;
     bool audioMono_ = false;
     bool mouseKey_ = false;
     bool daltonizationState_ = false;

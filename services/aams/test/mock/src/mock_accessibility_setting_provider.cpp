@@ -54,6 +54,7 @@ RetError AccessibilitySettingProvider::GetIntValue(const std::string& key, int32
     HILOG_DEBUG("start.");
     (void)key;
     (void)value;
+    (void)readOnlyFlag;
     return RET_OK;
 }
 
@@ -62,6 +63,7 @@ RetError AccessibilitySettingProvider::GetLongValue(const std::string& key, int6
     HILOG_DEBUG("start.");
     (void)key;
     (void)value;
+    (void)readOnlyFlag;
     return RET_OK;
 }
 
@@ -70,6 +72,7 @@ RetError AccessibilitySettingProvider::GetBoolValue(const std::string& key, bool
     HILOG_DEBUG("start.");
     (void)key;
     (void)value;
+    (void)readOnlyFlag;
     return RET_OK;
 }
 
@@ -140,8 +143,8 @@ RetError AccessibilitySettingProvider::GetStringValue(const std::string& key, st
     return RET_OK;
 }
 
-RetError AccessibilitySettingProvider::PutStringValue
-    (const std::string& key, const std::string& value, bool needNotify)
+RetError AccessibilitySettingProvider::GetStringValue(const std::string& key,
+    std::string& value, const bool readOnlyFlag)
 {
     HILOG_DEBUG("start.");
     (void)key;
