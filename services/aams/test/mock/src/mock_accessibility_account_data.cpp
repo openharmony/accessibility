@@ -257,7 +257,6 @@ void AccessibilityAccountData::UpdateEnableAbilityListsState()
 }
 
 RetError AccessibilityAccountData::EnableAbility(const std::string &name, const uint32_t capabilities,
-    const uint32_t capabilities,
     const std::string &callerBundleName)
 {
     HILOG_DEBUG("start.");
