@@ -992,6 +992,7 @@ void AccessibilityWindowManager::SetAccessibilityFocusedWindow()
 
 bool AccessibilityWindowManager::NeedSetActive(const int32_t windowId)
 {
+    std::lock_guard<ffrt::recursive_mutex> lock(interfaceMutex_);
     if (windowId == INVALID_WINDOW_ID || !a11yWindows_.count(windowId)) {
         return false;
     }
