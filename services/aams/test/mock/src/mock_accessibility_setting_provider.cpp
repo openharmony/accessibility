@@ -134,8 +134,8 @@ RetError AccessibilitySettingProvider::UnregisterObserver(const std::string& key
     return RET_OK;
 }
 
-RetError AccessibilitySettingProvider::GetStringValue(const std::string& key, std::string& value,
-    const bool readOnlyFlag)
+RetError AccessibilitySettingProvider::GetStringValue(const std::string& key,
+    std::string& value, const bool readOnlyFlag)
 {
     HILOG_DEBUG("start.");
     (void)key;
@@ -143,8 +143,8 @@ RetError AccessibilitySettingProvider::GetStringValue(const std::string& key, st
     return RET_OK;
 }
 
-RetError AccessibilitySettingProvider::GetStringValue(const std::string& key,
-    std::string& value, const bool readOnlyFlag)
+RetError AccessibilitySettingProvider::PutStringValue
+    (const std::string& key, const std::string& value, bool needNotify)
 {
     HILOG_DEBUG("start.");
     (void)key;
