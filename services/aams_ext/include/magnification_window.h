@@ -38,7 +38,7 @@ public:
     static MagnificationWindow &GetInstance();
     void EnableMagnification(uint32_t magnificationType, int32_t posX, int32_t posY);
     void DisableMagnification(uint32_t magnificationType, bool needClear);
-    void SetScale(uint32_t magnificationType, float scaleSpan);
+    void SetScale(uint32_t magnificationType, float ratio);
     void MoveMagnification(uint32_t magnificationType, int32_t deltaX, int32_t deltaY);
     PointerPos ConvertGesture(uint32_t type, PointerPos coordinates);
     PointerPos ConvertCoordinates(int32_t posX, int32_t posY);
@@ -68,7 +68,7 @@ private:
     // full magnification
     void EnableMagnificationFull(int32_t centerX, int32_t centerY);
     void DisableMagnificationFull(bool needClear = false);
-    void SetScaleFull(float scaleSpan);
+    void SetScaleFull(float ratio);
     void MoveMagnificationFull(int32_t deltaX, int32_t deltaY);
 
     void FollowFocuseElementFull(int32_t centerX, int32_t centerY);
@@ -79,7 +79,7 @@ private:
     // window magnification
     void EnableMagnificationPart(int32_t centerX, int32_t centerY);
     void DisableMagnificationPart(bool needClear = false);
-    void SetScalePart(float scaleSpan);
+    void SetScalePart(float ratio);
     void MoveMagnificationPart(int32_t deltaX, int32_t deltaY);
     void FollowFocuseElementPart(int32_t centerX, int32_t centerY);
     void ShowMagnificationPart();

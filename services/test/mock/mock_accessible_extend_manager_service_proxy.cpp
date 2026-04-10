@@ -49,6 +49,11 @@ bool ExtendManagerServiceProxy::SetGetMagnificationStateCallback()
     return true;
 }
 
+bool ExtendManagerServiceProxy::ExtendGetMagnificationTriggerMethodCallback()
+{
+    return true;
+}
+
 bool ExtendManagerServiceProxy::SetFindFocusedElementCallback()
 {
     return true;
@@ -209,6 +214,12 @@ void ExtendManagerServiceProxy::TransitionAnimationsDestroyTimers()
 void ExtendManagerServiceProxy::OnScreenMagnificationTypeChanged(uint32_t screenMagnificationType)
 {
     (void)screenMagnificationType;
+    return;
+}
+
+void ExtendManagerServiceProxy::OnScreenMagnificationTriggerMethodChanged(int32_t screenMagnificationTriggerMethod)
+{
+    (void)screenMagnificationTriggerMethod;
     return;
 }
 

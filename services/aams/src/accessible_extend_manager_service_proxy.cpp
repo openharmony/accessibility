@@ -78,6 +78,7 @@ bool ExtendManagerServiceProxy::LoadExtProxy()
         SetSendPointerEventForHoverCallback();
         SetGetDelayTimeCallback();
         SetGetMagnificationStateCallback();
+        ExtendGetMagnificationTriggerMethodCallback();
         ExtendGetMagnificationModeCallback();
         ExtendGetMagnificationScaleCallback();
         ExtendUpdateInputFilterCallback();
@@ -768,6 +769,27 @@ void ExtendManagerServiceProxy::TransitionAnimationsDestroyTimers()
     return func();
 }
 
+void ExtendManagerServiceProxy::OnScreenMagnificationTriggerMethodChanged(int32_t screenMagnificationTriggerMethod)
+{
+    using OnScreenMagnificationTriggerMethodChanged = void(*)(int32_t screenMagnificationTriggerMethod);
+    static OnScreenMagnificationTriggerMethodChanged func;
+    if (!handle_) {
+        HILOG_ERROR("handle is null");
+        return;
+    }
+    if (!func || readyFunc_.find(ExtMethod::ON_SCREEN_MAGNIFICATION_TRIGGER_METHOD_CHANGE) == readyFunc_.end()) {
+        func = (OnScreenMagnificationTriggerMethodChanged)GetFunc("OnScreenMagnificationTriggerMethodChanged");
+        if (func) {
+            readyFunc_.insert(ExtMethod::ON_SCREEN_MAGNIFICATION_TRIGGER_METHOD_CHANGE);
+            return func(screenMagnificationTriggerMethod);
+        } else {
+            HILOG_ERROR("get OnScreenMagnificationTriggerMethodChanged func failed");
+            return;
+        }
+    }
+    return func(screenMagnificationTriggerMethod);
+}
+
 void ExtendManagerServiceProxy::OnScreenMagnificationTypeChanged(uint32_t screenMagnificationType)
 {
     using OnScreenMagnificationTypeChanged = void(*)(uint32_t screenMagnificationType);
@@ -861,6 +883,24 @@ bool ExtendManagerServiceProxy::CheckExtProxyStatus()
         HILOG_ERROR("Extension Proxy is not load");
         return false;
     }
+    return true;
+}
+
+static int32_t GetMagnificationTriggerMethodCallback()
+{
+    return Singleton<AccessibleAbilityManagerService>::GetInstance().GetMagnificationTriggerMethod();
+}
+ 
+bool ExtendManagerServiceProxy::ExtendGetMagnificationTriggerMethodCallback()
+{
+    using GetMagnificationTriggerMethod = int32_t(*)();
+    using SetCallback = void(*)(GetMagnificationTriggerMethod cb);
+    SetCallback setCallbackFun = (SetCallback)GetFunc("ExtendGetMagnificationTriggerMethodCallback");
+    if (!setCallbackFun) {
+        HILOG_ERROR("setCallbackFun is null");
+        return false;
+    }
+    setCallbackFun(GetMagnificationTriggerMethodCallback);
     return true;
 }
 

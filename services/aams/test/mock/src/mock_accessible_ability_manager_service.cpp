@@ -683,6 +683,11 @@ uint32_t AccessibleAbilityManagerService::GetMagnificationMode()
     return FULL_SCREEN_MAGNIFICATION;
 }
 
+int32_t AccessibleAbilityManagerService::GetMagnificationTriggerMethod()
+{
+    return THREE_FINGER_DOUBLE_TAP_MODE;
+}
+
 void AccessibleAbilityManagerService::SetMagnificationMode(int32_t mode)
 {
     (void)mode;

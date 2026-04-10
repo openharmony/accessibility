@@ -28,7 +28,6 @@ namespace OHOS {
 namespace Accessibility {
 namespace {
     constexpr int32_t SINGLE_TREE_ID = 0;
-    constexpr int32_t DIVISOR_TWO = 2;
     constexpr int64_t ELEMENT_ID_INVALID = -1;
     constexpr int32_t WINDOW_ID_INVALID = -1;
     constexpr uint32_t TIME_OUT_OPERATOR = 5000;

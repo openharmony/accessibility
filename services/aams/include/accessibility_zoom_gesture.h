@@ -21,20 +21,25 @@
 #include "pointer_event.h"
 #include "dm_common.h"
 #include "full_screen_magnification_manager.h"
+#include "window_magnification_manager.h"
 #include "magnification_menu_manager.h"
+#include "magnification_def.h"
+#include <unordered_map>
+#include <functional>
 
 namespace OHOS {
 namespace Accessibility {
-enum ACCESSIBILITY_ZOOM_STATE {
-    READY_STATE,
-    ZOOMIN_STATE,
-    SLIDING_STATE,
-    MENU_SLIDING_STATE,
-    DRAGGING_STATE
-};
+
+#define BIND(func) [this](MMI::PointerEvent& event) { (func(event)); }
 
 enum ACCESSIBILITY_ZOOM_GESTURE_MSG : uint32_t {
     MULTI_TAP_MSG,
+    LONG_PRESS_MSG,
+    WAIT_ANOTHER_FINGER_DOWN_MSG,
+    HOLDING_MSG,
+    TWO_FINGER_SLIDING_MSG,
+    HOT_AREA_SLIDING_MSG,
+    MENU_SLIDING_MSG,
 };
 
 struct ZOOM_FOCUS_COORDINATE {
@@ -45,6 +50,7 @@ struct ZOOM_FOCUS_COORDINATE {
 class AccessibilityZoomGesture : public EventTransmission {
 public:
     AccessibilityZoomGesture(std::shared_ptr<FullScreenMagnificationManager> fullScreenManager,
+        std::shared_ptr<WindowMagnificationManager> windowMagnificationManager,
         std::shared_ptr<MagnificationMenuManager> menuManager);
     ~AccessibilityZoomGesture() = default;
 
@@ -54,10 +60,12 @@ public:
     void ShieldZoomGesture(bool state);
     void GetWindowParam(bool needRefresh = false);
     void StartMagnificationInteract();
+    void SetGestureMode(int32_t mode);
+    void SetMagnificationMode(uint32_t mode);
     void DisableGesture();
-    inline ACCESSIBILITY_ZOOM_STATE GetZoomState()
+    inline int32_t GetZoomState()
     {
-        return state_;
+        return zoomState_;
     }
 
 private:
@@ -72,77 +80,150 @@ private:
         AccessibilityZoomGesture &zoomGesture_;
     };
 
-    void TransferState(ACCESSIBILITY_ZOOM_STATE state);
+    void TransferState(int32_t state);
     void CacheEvents(MMI::PointerEvent &event);
     void SendCacheEventsToNext();
+    void SendEventToMultimodal(MMI::PointerEvent event);
     void ClearCacheEventsAndMsg();
-    void RecognizeInReadyState(MMI::PointerEvent &event);
+
+    void InitGestureFuncMap();
+    void InitSingleFingerTripleTapFuncMap();
+    void InitThreeFingerDoubleTapFuncMap();
+    void OnPointerEventExecute(MMI::PointerEvent &event);
+
     void RecognizeInZoomStateDownEvent(MMI::PointerEvent &event);
     void RecognizeInZoomStateMoveEvent(MMI::PointerEvent &event);
-    void RecognizeInZoomState(MMI::PointerEvent &event);
-    void RecognizeInSlidingState(MMI::PointerEvent &event);
-    void RecognizeInMenuSlidingState(MMI::PointerEvent &event);
-    void RecognizeInDraggingState(MMI::PointerEvent &event);
-    void RecognizeScroll(MMI::PointerEvent &event, ZOOM_FOCUS_COORDINATE &coordinate);
-    void RecognizeScale(MMI::PointerEvent &event, ZOOM_FOCUS_COORDINATE &coordinate);
+    void RecognizeScroll(ZOOM_FOCUS_COORDINATE &coordinate);
+    bool RecognizeScale(MMI::PointerEvent &event);
     void CalcFocusCoordinate(MMI::PointerEvent &event, ZOOM_FOCUS_COORDINATE &coordinate);
     float CalcScaleSpan(MMI::PointerEvent &event, ZOOM_FOCUS_COORDINATE coordinate);
     bool IsTapOnInputMethod(MMI::PointerEvent &event);
-    bool IsDownValid();
-    bool IsUpValid();
-    bool IsMoveValid();
+    bool IsDownValid(std::shared_ptr<MMI::PointerEvent> curEvent, std::shared_ptr<MMI::PointerEvent> lastEvent);
+    bool IsMoveValid(std::shared_ptr<MMI::PointerEvent> curEvent, std::shared_ptr<MMI::PointerEvent> lastEvent);
     bool IsLongPress();
     bool IsKnuckles(MMI::PointerEvent &event);
-    bool IsTripleTaps();
     void OnTripleTap(MMI::PointerEvent &event);
-    int64_t CalcIntervalTime(std::shared_ptr<MMI::PointerEvent> firstEvent,
-        std::shared_ptr<MMI::PointerEvent> secondEvent);
-    float CalcSeparationDistance(std::shared_ptr<MMI::PointerEvent> firstEvent,
-        std::shared_ptr<MMI::PointerEvent> secondEvent);
+    bool IsThreeFingerMultiTap(MMI::PointerEvent &event);
+    float CalcSeparationDistance(MMI::PointerEvent &event);
+    float CalcSeparationDistance(MMI::PointerEvent &firstEvent, MMI::PointerEvent &secondEvent);
     void OnZoom(int32_t centerX, int32_t centerY, bool showMenu);
     void OffZoom();
     void OnScroll(float offsetX, float offsetY);
-    void OnScale(float scaleSpan);
     void Clear();
-    void OnDrag();
 
-    bool startScaling_ = false;
-    bool isLongPress_ = false;
-    bool isMoveValid_ = true;
-    float preSpan_ = 0.0f;
-    float lastSpan_ = 0.0f;
-    float screenSpan_ = 0.0f;
-    float lastScrollFocusX_ = 0.0f;
-    float lastScrollFocusY_ = 0.0f;
+    void DoNothingHandler(MMI::PointerEvent &event);
+    void HandleSTReadyInitStateDown(MMI::PointerEvent &event);
+    void HandleSTReadyStateUp(MMI::PointerEvent &event);
+    void HandleSTReadyStateMove(MMI::PointerEvent &event);
+    void HandleSTReadyOneFingerTapStateDown(MMI::PointerEvent &event);
+
+    void HandleSTZoomInitStateDown(MMI::PointerEvent &event);
+    void HandleSTZoomOneFingerDownStateDown(MMI::PointerEvent &event);
+    void HandleSTZoomOneFingerDownStateUp(MMI::PointerEvent &event);
+    void HandleSTZoomOneFingerDownStateMove(MMI::PointerEvent &event);
+    void HandleSTZoomTwoFingerDownStateMove(MMI::PointerEvent &event);
+    void HandleSTZoomOneFingerTapStateDown(MMI::PointerEvent &event);
+    void HandleZoomSlidingStateDown(MMI::PointerEvent &event);
+    void HandleZoomSlidingStateMove(MMI::PointerEvent &event);
+    void HandleZoomSlidingStateUp(MMI::PointerEvent &event);
+
+    void HandleTDReadyInitStateDown(MMI::PointerEvent &event);
+    void HandleTDReadyOneFingerDownStateDown(MMI::PointerEvent &event);
+    void HandleTDReadyOneFingerDownStateMove(MMI::PointerEvent &event);
+    void HandleTDReadyTwoFingersDownStateDown(MMI::PointerEvent &event);
+    void HandleTDReadyTwoFingersDownStateMove(MMI::PointerEvent &event);
+    void HandleTDReadyThreeFingersDownStateUp(MMI::PointerEvent &event);
+    void HandleTDReadyThreeFingersDownStateMove(MMI::PointerEvent &event);
+    void HandleTDReadyThreeFingersTapStateDown(MMI::PointerEvent &event);
+    void HandleTDReadyThreeFingersTapStateMove(MMI::PointerEvent &event);
+    void HandleTDReadyThreeFingersContinueDownStateDown(MMI::PointerEvent &event);
+    void HandleTDReadyThreeFingersContinueDownStateUp(MMI::PointerEvent &event);
+    void HandleTDReadyThreeFingersContinueDownStateMove(MMI::PointerEvent &event);
+    void HandleHoldStateDown(MMI::PointerEvent &event);
+    void HandleHoldStateUp(MMI::PointerEvent &event);
+    void HandleHoldStateMove(MMI::PointerEvent &event);
+    void HandleMenuSlidingStateMove(MMI::PointerEvent &event);
+    void HandleMenuSlidingStateUp(MMI::PointerEvent &event);
+    void HandleHotAreaSlidingStateMove(MMI::PointerEvent &event);
+    void HandleHotAreaSlidingStateUp(MMI::PointerEvent &event);
+
+    void HandleTDZoomInitStateDown(MMI::PointerEvent &event);
+    void HandleTDZoomOneFingerDownStateDown(MMI::PointerEvent &event);
+    void HandleTDZoomOneFingerDownStateMove(MMI::PointerEvent &event);
+    void HandleTDZoomOneFingerDownStateUp(MMI::PointerEvent &event);
+    void HandleTDZoomTwoFingersDownStateDown(MMI::PointerEvent &event);
+    void HandleTDZoomTwoFingersDownStateMove(MMI::PointerEvent &event);
+    void HandleTDZoomThreeFingersDownStateUp(MMI::PointerEvent &event);
+    void HandleTDZoomThreeFingersDownStateMove(MMI::PointerEvent &event);
+    void HandleTDZoomThreeFingersTapStateDown(MMI::PointerEvent &event);
+    void HandleTDZoomThreeFingersTapStateMove(MMI::PointerEvent &event);
+    void HandleTDZoomThreeFingersContinueDownStateUp(MMI::PointerEvent &event);
+    void HandleTDZoomThreeFingersContinueDownStateMove(MMI::PointerEvent &event);
+
     float tapDistance_ = 0.0f;
     float multiTapDistance_ = 0.0f;
-    float scale_ = DEFAULT_SCALE;
-    bool isScale_ = false;
+    float baseDistance_ = 0.0f;
+    float lastDistance_ = 0.0f;
     uint64_t screenId_ = -1;
     uint32_t screenWidth_ = 0;
     uint32_t screenHeight_ = 0;
-    int32_t centerX_ = 0;
-    int32_t centerY_ = 0;
-    int32_t downPid_ = -1;
-    ACCESSIBILITY_ZOOM_STATE state_ = READY_STATE;
+    uint32_t gestureType_ = 0;
+    int32_t zoomState_ = READY;
+    int32_t zoomGestureState_ = INIT;
+    int32_t gestureMode_ = THREE_FINGER_DOUBLE_TAP_MODE;
+    uint32_t magnificationMode_ = FULL_SCREEN_MAGNIFICATION;
+    bool isTapOnMenu_ = false;
+    bool isTapOnWindowHotArea_ = false;
+    bool isTapOnWindow_ = false;
+    bool hasScaled_ = false;
     OHOS::Rosen::DisplayOrientation orientation_ =
         OHOS::Rosen::DisplayOrientation::UNKNOWN;
-    std::shared_ptr<MMI::PointerEvent> preLastDownEvent_ = nullptr;
+    ZOOM_FOCUS_COORDINATE lastCenter = {0.0f, 0.0f};
     std::shared_ptr<MMI::PointerEvent> lastDownEvent_ = nullptr;
-    std::shared_ptr<MMI::PointerEvent> preLastUpEvent_ = nullptr;
-    std::shared_ptr<MMI::PointerEvent> lastUpEvent_ = nullptr;
-    std::shared_ptr<MMI::PointerEvent> currentMoveEvent_ = nullptr;
-    std::shared_ptr<MMI::PointerEvent> longPressDownEvent_ = nullptr;
-    std::shared_ptr<MMI::PointerEvent> lastSlidingEvent_ = nullptr;
+    std::shared_ptr<MMI::PointerEvent> lastTripleTapEvents_[3] = {nullptr, nullptr, nullptr};
     std::shared_ptr<ZoomGestureEventHandler> zoomGestureEventHandler_ = nullptr;
     std::vector<std::shared_ptr<MMI::PointerEvent>> cacheEvents_;
     std::shared_ptr<FullScreenMagnificationManager> fullScreenManager_ = nullptr;
+    std::shared_ptr<WindowMagnificationManager> windowMagnificationManager_ = nullptr;
     std::shared_ptr<MagnificationMenuManager> menuManager_ = nullptr;
-    
+
     std::atomic<bool> shieldZoomGestureFlag_ = false;
-    bool isTapOnMenu_ = false;
-    uint32_t gestureType_ = 0;
-    bool isTripleDown_ = false;
+    int32_t singleFingerTapCount_ = 0;
+
+    static constexpr int32_t POINTER_ID_0 = 0;
+    static constexpr int32_t POINTER_ID_1 = 1;
+    static constexpr int32_t POINTER_ID_2 = 2;
+
+    static constexpr int32_t POINTER_COUNT_1 = 1;
+    static constexpr int32_t POINTER_COUNT_2 = 2;
+    static constexpr int32_t POINTER_COUNT_3 = 3;
+
+    static constexpr int32_t READY = 0;
+    static constexpr int32_t ZOOM = 1;
+
+    static constexpr int32_t PASSING_THROUGH = -2;
+    static constexpr int32_t INVALID = -1;
+    static constexpr int32_t INIT = 0;
+    static constexpr int32_t ONE_FINGER_DOWN = 1;
+    static constexpr int32_t ONE_FINGER_TAP = 2;
+    static constexpr int32_t ONE_FINGER_TAP_THEN_DOWN = 3;
+    static constexpr int32_t HOLD = 4;
+    static constexpr int32_t TWO_FINGER_DOWN = 5;
+    static constexpr int32_t THREE_FINGER_DOWN = 6;
+    static constexpr int32_t THREE_FINGER_TAP = 7;
+    static constexpr int32_t THREE_FINGER_TAP_THEN_DOWN = 8;
+    static constexpr int32_t SLIDING = 9;
+    static constexpr int32_t HOT_AREA_SLIDING = 10;
+    static constexpr int32_t MENU_SLIDING = 11;
+
+    static constexpr int32_t GESTURE_MODE_COUNT = 2;
+    static constexpr int32_t MAGNIFICATION_STATE_COUNT = 2;
+    static constexpr int32_t GESTURE_STATE_COUNT = 12;
+    static constexpr int32_t POINTER_ACTION_MAX = 5;
+
+    using GestureEventFunc = std::function<void(MMI::PointerEvent&)>;
+    GestureEventFunc handlerFuncMap_
+        [GESTURE_MODE_COUNT][MAGNIFICATION_STATE_COUNT][GESTURE_STATE_COUNT][POINTER_ACTION_MAX] = {};
 };
 } // namespace Accessibility
 } // namespace OHOS

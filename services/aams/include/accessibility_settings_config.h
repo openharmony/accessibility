@@ -23,6 +23,7 @@
 
 #include "accessibility_caption.h"
 #include "accessibility_datashare_helper.h"
+#include "magnification_def.h"
 
 namespace OHOS {
 namespace Accessibility {
@@ -49,6 +50,7 @@ public:
     RetError SetScreenMagnificationType(const uint32_t type);
     RetError SetScreenMagnificationMode(const uint32_t mode);
     RetError SetScreenMagnificationScale(const float scale);
+    RetError SetScreenMagnificationTriggerMethod(const int32_t triggerMethod);
     RetError SetShortKeyState(const bool state);
     RetError SetShortKeyOnLockScreenState(const bool state);
     RetError SetShortKeyTimeout(const int32_t time);
@@ -105,6 +107,7 @@ public:
     uint32_t GetScreenMagnificationType() const;
     uint32_t GetScreenMagnificationMode() const;
     float GetScreenMagnificationScale() const;
+    int32_t GetScreenMagnificationTriggerMethod() const;
     bool GetFlashReminderSwitch() const;
     bool GetSeniorModeState() const;
 
@@ -158,6 +161,7 @@ private:
     std::atomic<uint32_t> screenMagnificationType_ = 0;
     std::atomic<uint32_t> screenMagnificationMode_ = 0;
     std::atomic<float> screenMagnificationScale_ = 2.0f;
+    std::atomic<int32_t> screenMagnificationTriggerMethod_ = THREE_FINGER_DOUBLE_TAP_MODE;
     std::atomic<bool> isCaptionState_ = false;
     AccessibilityConfig::CaptionProperty captionProperty_;
     std::atomic<bool> isMouseKeyState_ = false;
