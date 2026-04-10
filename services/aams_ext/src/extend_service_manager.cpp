@@ -187,6 +187,16 @@ uint64_t ExtendServiceManager::GetDefaultDisplayId()
 #endif
 }
 
+void ExtendServiceManager::OnScreenMagnificationTriggerMethodChanged(int32_t screenMagnificationTriggerMethod)
+{
+    auto interceptor = AccessibilityInputInterceptor::GetInstance();
+    if (!interceptor) {
+        HILOG_ERROR("interceptor is null.");
+        return;
+    }
+    interceptor->SetMagnificationTriggerMethod(screenMagnificationTriggerMethod);
+}
+
 void ExtendServiceManager::OnScreenMagnificationTypeChanged(uint32_t screenMagnificationType)
 {
     if (magnificationManager_ != nullptr) {

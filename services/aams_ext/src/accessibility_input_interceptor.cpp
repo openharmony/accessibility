@@ -250,34 +250,27 @@ RetError AccessibilityInputInterceptor::InjectEvents(const std::shared_ptr<Acces
     return RET_OK;
 }
 
-// LCOV_EXCL_START
+void AccessibilityInputInterceptor::SetMagnificationTriggerMethod(int32_t screenMagnificationTriggerMethod)
+{
+    if (zoomGesture_ == nullptr) {
+        HILOG_ERROR("zoomGesture is not enable");
+        return;
+    }
+    zoomGesture_->SetGestureMode(screenMagnificationTriggerMethod);
+}
+
 void AccessibilityInputInterceptor::CreateMagnificationGesture(sptr<EventTransmission> &header,
     sptr<EventTransmission> &current)
 {
-    HILOG_INFO("CreatWindowMagnificationGesture start");
-
+    HILOG_INFO("CreateMagnificationGesture start");
+    
     Singleton<ExtendServiceManager>::GetInstance().InitMagnification();
-    uint32_t magnificationMode = Singleton<ExtendServiceManager>::GetInstance().getMagnificationModeCallback();
-    if (magnificationMode == FULL_SCREEN_MAGNIFICATION) {
-        HILOG_INFO("create zoomGesture");
-        CreatZoomGesture();
-        if (zoomGesture_ == nullptr) {
-            HILOG_ERROR("zoomGesture create error.");
-            return;
-        }
-        SetNextEventTransmitter(header, current, zoomGesture_);
-    } else if (magnificationMode == WINDOW_MAGNIFICATION) {
-        HILOG_INFO("create windowMagnificationGesture");
-        CreatWindowMagnificationGesture();
-        if (windowMagnificationGesture_ == nullptr) {
-            HILOG_ERROR("windowMagnificationGesture create error.");
-            return;
-        }
-        SetNextEventTransmitter(header, current, windowMagnificationGesture_);
-    } else {
-        HILOG_WARN("invalid magnificationMode");
-        ClearMagnificationGesture();
+    CreateZoomGesture();
+    if (zoomGesture_ == nullptr) {
+        HILOG_ERROR("zoomGesture create error.");
+        return;
     }
+    SetNextEventTransmitter(header, current, zoomGesture_);
 #ifdef OHOS_BUILD_ENABLE_DISPLAY_MANAGER
     if (ExtUtils::IsWideFold() || ExtUtils::IsSmallFold()) {
         AccessibilityDisplayManager &displayMgr = Singleton<AccessibilityDisplayManager>::GetInstance();
@@ -288,12 +281,18 @@ void AccessibilityInputInterceptor::CreateMagnificationGesture(sptr<EventTransmi
 #endif
 }
 
-void AccessibilityInputInterceptor::CreatZoomGesture()
+void AccessibilityInputInterceptor::CreateZoomGesture()
 {
+    std::shared_ptr<WindowMagnificationManager> windowMagnificationManager =
+        Singleton<ExtendServiceManager>::GetInstance().GetWindowMagnificationManager();
     std::shared_ptr<FullScreenMagnificationManager> fullScreenMagnificationManager =
         Singleton<ExtendServiceManager>::GetInstance().GetFullScreenMagnificationManager();
     std::shared_ptr<MagnificationMenuManager> menuManager =
         Singleton<ExtendServiceManager>::GetInstance().GetMenuManager();
+    if (windowMagnificationManager == nullptr) {
+        HILOG_ERROR("get windowMagnification manager failed.");
+        return;
+    }
     if (fullScreenMagnificationManager == nullptr) {
         HILOG_ERROR("get fullScreenMagnification manager failed.");
         return;
@@ -304,7 +303,8 @@ void AccessibilityInputInterceptor::CreatZoomGesture()
     }
     if (zoomGesture_ == nullptr) {
         sptr<AccessibilityZoomGesture> zoomGesture =
-            new(std::nothrow) AccessibilityZoomGesture(fullScreenMagnificationManager, menuManager);
+            new(std::nothrow) AccessibilityZoomGesture(fullScreenMagnificationManager,
+            windowMagnificationManager, menuManager);
         if (zoomGesture == nullptr) {
             HILOG_ERROR("zoomGesture create error.");
             return;
@@ -318,40 +318,10 @@ void AccessibilityInputInterceptor::CreatZoomGesture()
     }
 }
 
-void AccessibilityInputInterceptor::CreatWindowMagnificationGesture()
-{
-    std::shared_ptr<WindowMagnificationManager> windowMagnificationManager =
-        Singleton<ExtendServiceManager>::GetInstance().GetWindowMagnificationManager();
-    std::shared_ptr<MagnificationMenuManager> menuManager =
-        Singleton<ExtendServiceManager>::GetInstance().GetMenuManager();
-    if (windowMagnificationManager == nullptr) {
-        HILOG_ERROR("get windowMagnification manager failed.");
-        return;
-    }
-    if (menuManager == nullptr) {
-        HILOG_ERROR("get menu manager failed.");
-        return;
-    }
-    if (windowMagnificationGesture_ == nullptr) {
-        sptr<WindowMagnificationGesture> windowMagnificationGesture =
-            new(std::nothrow) WindowMagnificationGesture(windowMagnificationManager, menuManager);
-        if (windowMagnificationGesture == nullptr) {
-            HILOG_ERROR("windowMagnificationGesture create error.");
-            return;
-        }
-        windowMagnificationGesture_ = windowMagnificationGesture;
-    }
-    if (needInteractMagnification_) {
-        windowMagnificationGesture_->StartMagnificationInteract();
-        needInteractMagnification_ = false;
-    }
-}
-// LCOV_EXCL_STOP
 
 void AccessibilityInputInterceptor::ClearMagnificationGesture()
 {
     zoomGesture_ = nullptr;
-    windowMagnificationGesture_ = nullptr;
 }
 
 void AccessibilityInputInterceptor::CreateKeyEventTransmitters()
@@ -436,7 +406,6 @@ void AccessibilityInputInterceptor::DestroyTransmitters()
         Singleton<ExtendServiceManager>::GetInstance().SetTouchEventInjector(nullptr);
         pointerEventTransmitters_= nullptr;
         zoomGesture_ = nullptr;
-        windowMagnificationGesture_ = nullptr;
     }
     if (keyEventTransmitters_ != nullptr) {
         keyEventTransmitters_->DestroyEvents();
@@ -498,15 +467,11 @@ void AccessibilityInputInterceptor::SetNextEventTransmitter(sptr<EventTransmissi
     current = next;
 }
 
-// LCOV_EXCL_START
 void AccessibilityInputInterceptor::ShieldZoomGesture(bool flag)
 {
     HILOG_INFO("flag = %{public}d", flag);
     if (zoomGesture_) {
         zoomGesture_->ShieldZoomGesture(flag);
-    }
-    if (windowMagnificationGesture_) {
-        windowMagnificationGesture_->ShieldZoomGesture(flag);
     }
 }
 
@@ -527,24 +492,24 @@ void AccessibilityInputInterceptor::StartMagnificationInteract(uint32_t mode)
 void AccessibilityInputInterceptor::DisableGesture(uint32_t mode)
 {
     HILOG_DEBUG("mode = %{public}d", mode);
-    if (mode == FULL_SCREEN_MAGNIFICATION && zoomGesture_ != nullptr) {
+    if (zoomGesture_ != nullptr) {
         zoomGesture_->DisableGesture();
-    } else if (mode == WINDOW_MAGNIFICATION && windowMagnificationGesture_ != nullptr) {
-        windowMagnificationGesture_->DisableGesture();
-    } else {
-        HILOG_WARN("invalid mode.");
     }
 }
 
 void AccessibilityInputInterceptor::EnableGesture(uint32_t mode)
 {
     HILOG_DEBUG("mode = %{public}d", mode);
-    if (mode == FULL_SCREEN_MAGNIFICATION && zoomGesture_ != nullptr) {
+    if (zoomGesture_ != nullptr) {
         zoomGesture_->StartMagnificationInteract();
-    } else if (mode == WINDOW_MAGNIFICATION && windowMagnificationGesture_ != nullptr) {
-        windowMagnificationGesture_->StartMagnificationInteract();
-    } else {
-        HILOG_WARN("invalid mode.");
+    }
+}
+
+void AccessibilityInputInterceptor::SetMagnificationMode(uint32_t mode)
+{
+    HILOG_DEBUG("mode = %{public}d", mode);
+    if (zoomGesture_ != nullptr) {
+        zoomGesture_->SetMagnificationMode(mode);
     }
 }
 
@@ -555,7 +520,6 @@ void AccessibilityInputInterceptor::SetServiceOnKeyEventResult(
         keyEventFilter_->SetServiceOnKeyEventResult(connectionId, isHandled, sequenceNum);
     }
 }
-// LCOV_EXCL_STOP
 
 AccessibilityInputEventConsumer::AccessibilityInputEventConsumer()
 {

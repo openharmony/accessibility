@@ -43,6 +43,7 @@ using SendPointerEventForHoverCallback = void (*)(
 using GetDelayTime = int64_t(*)();
 using GetMagnificationState = bool(*)();
 using GetMagnificationModeCallback = uint32_t(*)();  // get
+using GetMagnificationTriggerMethodCallback = int32_t(*)();
 using GetMagnificationScaleCallback = float(*)();   // get
 using UpdateInputFilterCallback = void(*)();
 using MagnificationModeCallback = void(*)(int32_t mode);   // set
@@ -91,6 +92,7 @@ public:
 
     RetError SetMouseAutoClick(int32_t time);
     void SetServiceOnKeyEventResult(int32_t connectionId, bool isHandled, uint32_t sequenceNum);
+    void OnScreenMagnificationTriggerMethodChanged(int32_t screenMagnificationTriggerMethod);
     void OnScreenMagnificationTypeChanged(uint32_t screenMagnificationType);
     void OnScreenMagnificationStateChanged();
     void UnregisterDisplayListener();
@@ -103,6 +105,7 @@ public:
     bool CheckDisplayId(uint64_t displayId);
 
     GetMagnificationModeCallback getMagnificationModeCallback = nullptr;
+    GetMagnificationTriggerMethodCallback getMagnificationTriggerMethodCallback = nullptr;
     GetMagnificationScaleCallback getMagnificationScaleCallback = nullptr;
     UpdateInputFilterCallback updateInputFilterCallback = nullptr;
     MagnificationModeCallback magnificationModeCallback = nullptr;

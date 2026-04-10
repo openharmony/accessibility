@@ -277,6 +277,7 @@ public:
     bool GetMagnificationState();
     uint32_t GetMagnificationType();
     uint32_t GetMagnificationMode();
+    int32_t GetMagnificationTriggerMethod();
     void SetMagnificationMode(int32_t mode);
     float GetMagnificationScale();
     void SetMagnificationScale(float scale);
@@ -368,6 +369,8 @@ private:
     void RegisterScreenMagnificationState();
     void OnScreenMagnificationTypeChanged();
     void SetConfigScreenMagnificationScale(float scale);
+    void OnScreenMagnificationTriggerMethodChanged();
+    void SetConfigScreenMagnificationTriggerMethod(int32_t triggerMethod);
     void OnScreenMagnificationScaleChanged();
     void RegisterScreenMagnificationType();
     void OnFlashReminderSwitchChanged();

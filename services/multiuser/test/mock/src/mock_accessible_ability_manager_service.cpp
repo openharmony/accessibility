@@ -3828,6 +3828,23 @@ uint32_t MockAccessibleAbilityManagerService::GetMagnificationType()
     return config->GetScreenMagnificationType();
 }
 
+int32_t AccessibleAbilityManagerService::GetMagnificationTriggerMethod()
+{
+    HILOG_DEBUG();
+    sptr<AccessibilityAccountData> accountData = GetCurrentAccountData();
+    if (accountData == nullptr) {
+        HILOG_ERROR("accountData is nullptr");
+        return 0;
+    }
+ 
+    std::shared_ptr<AccessibilitySettingsConfig> config = accountData->GetConfig();
+    if (config == nullptr) {
+        HILOG_ERROR("config is nullptr");
+        return 0;
+    }
+    return config->GetScreenMagnificationTriggerMethod();
+}
+
 uint32_t MockAccessibleAbilityManagerService::GetMagnificationMode()
 {
     HILOG_DEBUG();
