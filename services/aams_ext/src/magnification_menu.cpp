@@ -292,8 +292,6 @@ void MagnificationMenu::FlushImplicitTransaction()
         if (rsTransaction != nullptr) {
             rsTransaction->FlushImplicitTransaction();
         }
-    } else {
-        Rosen::RSTransaction::FlushImplicitTransaction();
     }
 }
 
