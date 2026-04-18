@@ -88,6 +88,7 @@ namespace {
     const char* IGNORE_REPEAT_CLICK_TIMESTAMP = "accessibility_ignore_repeat_click_timestamp";
     const char* RECOVERY_IGNORE_REPEAT_CLICK_DATE = "recovery_ignore_repeat_click_switch_date";
     const char* IGNORE_REPEATED_CLICK_CACHE_FLAG = "accessibility_ignore_repeat_click_cache_flag";
+    const char* IGNORE_REPEATED_CLICK_EXCLUDE_FLAG = "accessibility_ignore_repeat_click_exclude_flag";
     const char* CLONE_CAPABILITY = "const.accessibility.cloneCapability";
     const char* OLD_DEVICE_CAPABILITY = "accessibility_clone_capability";
     const char* TRANSITION_ANIMATIONS_TIMESTAMP = "accessibility_transition_animations_timestamp";
@@ -1200,6 +1201,7 @@ void AccessibilitySettingsConfig::HandleIgnoreRepeatClickCache()
     } else {
         ignoreRepeatClickState_.store(datashare_->GetBoolValue(IGNORE_REPEAT_CLICK_SWITCH, false));
     }
+    datashare_->PutBoolValue(IGNORE_REPEATED_CLICK_EXCLUDE_FLAG, false);
 }
 
 void AccessibilitySettingsConfig::InitSetting()
