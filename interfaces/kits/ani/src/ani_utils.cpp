@@ -19,7 +19,6 @@
 #include <sstream>
 #include <vector>
 #include <charconv>
-#include <inttypes.h>
 
 #include "hilog_wrapper.h"
 #include "ani_utils.h"
