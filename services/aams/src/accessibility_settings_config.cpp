@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <inttypes.h>
+
 #include "accessibility_settings_config.h"
 #include "hilog_wrapper.h"
 #include "system_ability_definition.h"
