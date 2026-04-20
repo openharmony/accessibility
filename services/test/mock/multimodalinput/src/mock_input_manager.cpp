@@ -81,19 +81,21 @@ void InputManager::MoveMouse(int32_t offsetX, int32_t offsetY)
     (void)offsetY;
 }
 
-void InputManager::SimulateInputEvent(std::shared_ptr<KeyEvent> keyEvent)
+int32_t InputManager::SimulateInputEvent(std::shared_ptr<KeyEvent> keyEvent)
 {
     HILOG_DEBUG();
     mockKeyCode = keyEvent->GetKeyCode();
+    return 0;
 }
 
-void InputManager::SimulateInputEvent(std::shared_ptr<PointerEvent> pointerEvent, bool isAutoToVirtualScreen,
+int32_t InputManager::SimulateInputEvent(std::shared_ptr<PointerEvent> pointerEvent, bool isAutoToVirtualScreen,
     int32_t useCoordinate)
 {
     HILOG_DEBUG();
     std::lock_guard<ffrt::mutex> lock(g_mtx);
     int32_t touchAction = pointerEvent->GetPointerAction();
     mockTouchActions.push_back(touchAction);
+    return 0;
 }
 
 int32_t InputManager::AddInterceptor(std::shared_ptr<IInputEventConsumer> interceptorId)
