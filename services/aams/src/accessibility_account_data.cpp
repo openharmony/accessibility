@@ -17,7 +17,6 @@
 #include "accessibility_element_operator_manager.h"
 #include "accessible_ability_manager.h"
 
-#include <inttypes.h>
 #include <any>
 #include <dlfcn.h>
 #ifdef OHOS_BUILD_ENABLE_HITRACE
