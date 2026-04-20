@@ -1160,7 +1160,7 @@ void AccessibilitySettingsConfig::HandleIgnoreRepeatClickState()
         SetIgnoreRepeatClickState(false);
         recoveryDate = IgnoreRepeatClickNotification::GetWallTimeMs();
         datashare_->PutLongValue(RECOVERY_IGNORE_REPEAT_CLICK_DATE, recoveryDate);
-        HILOG_INFO("recovery ignore repeat click %{public}lld", recoveryDate);
+        HILOG_INFO("recovery ignore repeat click %{public}" PRId64, recoveryDate);
     }
  
     if (ignoreRepeatClickState_.load()) {
