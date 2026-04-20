@@ -19,7 +19,6 @@
 #include "nlohmann/json.hpp"
 #include <ani_signature_builder.h>
 #include <variant>
-#include <inttypes.h>
 
 namespace OHOS {
 namespace Accessibility {
