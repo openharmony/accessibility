@@ -14,8 +14,6 @@
  */
 #include "ets_extension_context.h"
 
-#include <inttypes.h>
-
 #include "ani_accessibility_extension_context.h"
 #include "ani_common_want.h"
 #include "ani_accessibility_element.h"
