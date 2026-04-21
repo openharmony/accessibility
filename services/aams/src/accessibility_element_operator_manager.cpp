@@ -822,7 +822,8 @@ void ElementOperatorManager::CalculateClickPosition(const AccessibilityElementIn
     } else {
         HILOG_DEBUG("Failed to get window rect!");
         if (Singleton<ExtendManagerServiceProxy>::GetInstance().CheckExtProxyStatus()) {
-            Singleton<ExtendManagerServiceProxy>::GetInstance().GetClickPosition(boundRightBottomXPos, boundRightBottomYPos);
+            Singleton<ExtendManagerServiceProxy>::GetInstance().GetClickPosition(
+                boundRightBottomXPos, boundRightBottomYPos);
         }
     }
 
