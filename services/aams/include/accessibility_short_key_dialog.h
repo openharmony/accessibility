@@ -31,7 +31,8 @@ namespace Accessibility {
 enum ShortKeyDialogType {
     FUNCTION_SELECT = 0,
     RECONFIRM = 1,
-    READER_EXCLUSIVE = 2
+    READER_EXCLUSIVE = 2,
+    ZOOM_GESTURE_CONFLICT = 3
 };
 
 class ShortkeyAbilityConnection : public AAFwk::AbilityConnectionStub {
@@ -88,6 +89,24 @@ private:
     std::string commandStr_;
 };
 
+class ZoomGestureConflictAbilityConnection : public AAFwk::AbilityConnectionStub {
+public:
+    explicit ZoomGestureConflictAbilityConnection(const std::string &commandStr)
+    {
+        commandStr_ = commandStr;
+    }
+ 
+    virtual ~ZoomGestureConflictAbilityConnection() = default;
+ 
+    void OnAbilityConnectDone(const AppExecFwk::ElementName &element,
+        const sptr<IRemoteObject> &remoteObject, int32_t resultCode) override;
+    void OnAbilityDisconnectDone(const AppExecFwk::ElementName &element, int32_t resultCode) override;
+    std::string GetCommandString();
+ 
+private:
+    std::string commandStr_;
+};
+
 class AccessibilityShortkeyDialog {
 public:
     AccessibilityShortkeyDialog();
@@ -104,6 +123,7 @@ private:
     sptr<ShortkeyAbilityConnection> functionSelectConn_ {nullptr};
     sptr<ReConfirmAbilityConnection> reConfirmConn_ {nullptr};
     sptr<ExclusiveAbilityConnection> readerExclusiveConn_ {nullptr};
+    sptr<ZoomGestureConflictAbilityConnection> zoomGestureConflictConn_ {nullptr};
 };
 
 } // namespace Accessibility

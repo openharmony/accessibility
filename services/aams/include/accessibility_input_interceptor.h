@@ -95,6 +95,10 @@ public:
     void SetMagnificationTriggerMethod(int32_t screenMagnificationTriggerMethod);
     void InitInputManagerHandler();
     void SetServiceOnKeyEventResult(int32_t connectionId, bool isHandled, uint32_t sequenceNum);
+    inline bool IsTouchExplorationEnabled()
+    {
+        return availableFunctions_ & FEATURE_TOUCH_EXPLORATION;
+    }
 
     inline std::shared_ptr<AppExecFwk::EventRunner> &GetInputManagerRunner()
     {

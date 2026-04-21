@@ -85,6 +85,7 @@ namespace {
     const char* ELDER_CARE_ENABLED_KEY = "accessibility_elder_care_switch_enabled";
     const char* SCREEN_MAGNIFICATION_SCALE = "accessibility_display_magnification_scale";
     const char* SCREEN_MAGNIFICATION_TRIGGER_METHOD = "accessibility_display_magnification_trigger_method";
+    const char* ZOOM_GESTURE_CONFLICT_DIALOG_OPEN = "accessibility_zoom_gesture_conflict_dialog_open";
     const char* MAGNIFICATION_PARAM = "const.accessibility.magnification";
     const char* VOICE_RECOGNITION_KEY = "accessibility_sound_recognition_switch";
     const char* VOICE_RECOGNITION_TYPES = "accessibility_sound_recognition_enabled";

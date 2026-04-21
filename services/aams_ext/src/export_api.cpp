@@ -73,6 +73,16 @@ API_EXPORT void SetCheckDisplayIdCallback(
 {
     serviceManagerInstance.checkDisplayIdCallback = cb;
 }
+API_EXPORT void SetNotifyZoomGesutureConflictDialogCallback(
+    OHOS::Accessibility::NotifyZoomGesutureConflictDialogCallback cb)
+{
+    serviceManagerInstance.notifyZoomGesutureConflictDialogCallback = cb;
+}
+API_EXPORT void SetGetNotifyZoomGestureConflictCallback(
+    OHOS::Accessibility::GetNotifyZoomGestureConflictCallback cb)
+{
+    serviceManagerInstance.getNotifyZoomGestureConflictCallback = cb;
+}
 // method export To sa
 API_EXPORT int32_t PublishIgnoreRepeatClickReminder()
 {

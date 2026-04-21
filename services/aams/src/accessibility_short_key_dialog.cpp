@@ -174,6 +174,52 @@ std::string ExclusiveAbilityConnection::GetCommandString()
     return commandStr_;
 }
 
+void ZoomGestureConflictAbilityConnection::OnAbilityConnectDone(const AppExecFwk::ElementName &element,
+    const sptr<IRemoteObject> &remoteObject, int32_t resultCode)
+{
+    HILOG_DEBUG("on ability connected");
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+    data.WriteInt32(SHORTKEY_DIALOG_PARAM_NUM);
+    data.WriteString16(u"bundleName");
+    data.WriteString16(u"com.ohos.settings");
+    data.WriteString16(u"abilityName");
+    data.WriteString16(u"AccessibilityZoomGestureDialog");
+    data.WriteString16(u"parameters");
+    data.WriteString16(Str8ToStr16(GetCommandString()));
+ 
+    if (!data.WriteParcelable(&element)) {
+        HILOG_ERROR("Connect done element error.");
+        return;
+    }
+ 
+    if (!data.WriteRemoteObject(remoteObject)) {
+        HILOG_ERROR("Connect done remote object error.");
+        return;
+    }
+ 
+    if (!data.WriteInt32(resultCode)) {
+        HILOG_ERROR("Connect done result code error.");
+        return;
+    }
+ 
+    int32_t errCode = remoteObject->SendRequest(
+        AAFwk::IAbilityConnection::ON_ABILITY_CONNECT_DONE, data, reply, option);
+    HILOG_DEBUG("AbilityConnectionWrapperProxy::OnAbilityConnectDone result %{public}d", errCode);
+}
+ 
+void ZoomGestureConflictAbilityConnection::OnAbilityDisconnectDone(const AppExecFwk::ElementName &element,
+    int32_t resultCode)
+{
+    HILOG_DEBUG("on ability disconnected");
+}
+ 
+std::string ZoomGestureConflictAbilityConnection::GetCommandString()
+{
+    return commandStr_;
+}
+
 // dialog
 AccessibilityShortkeyDialog::AccessibilityShortkeyDialog() {}
 
@@ -198,34 +244,49 @@ bool AccessibilityShortkeyDialog::ConnectExtensionAbility(const AAFwk::Want &wan
     // reset current callingIdentify
     std::string identity = IPCSkeleton::ResetCallingIdentity();
     int32_t ret = ERR_OK;
-
-    if (dialogType == ShortKeyDialogType::FUNCTION_SELECT) {
-        functionSelectConn_ = new(std::nothrow) ShortkeyAbilityConnection(commandStr);
-        if (functionSelectConn_ == nullptr) {
-            HILOG_ERROR("connection_ is nullptr.");
-            IPCSkeleton::SetCallingIdentity(identity);
-            return false;
-        }
-        ret = AAFwk::ExtensionManagerClient::GetInstance().ConnectServiceExtensionAbility(want,
-            functionSelectConn_, nullptr, DEFAULT_VALUE_MINUS_ONE);
-    } else if (dialogType == ShortKeyDialogType::READER_EXCLUSIVE) {
-        readerExclusiveConn_ = new(std::nothrow) ExclusiveAbilityConnection(commandStr);
-        if (readerExclusiveConn_ == nullptr) {
-            HILOG_ERROR("connection_ is nullptr.");
-            IPCSkeleton::SetCallingIdentity(identity);
-            return false;
-        }
-        ret = AAFwk::ExtensionManagerClient::GetInstance().ConnectServiceExtensionAbility(want,
-            readerExclusiveConn_, nullptr, DEFAULT_VALUE_MINUS_ONE);
-    } else {
-        reConfirmConn_ = new(std::nothrow) ReConfirmAbilityConnection(commandStr);
-        if (reConfirmConn_ == nullptr) {
-            HILOG_ERROR("connection_ is nullptr.");
-            IPCSkeleton::SetCallingIdentity(identity);
-            return false;
-        }
-        ret = AAFwk::ExtensionManagerClient::GetInstance().ConnectServiceExtensionAbility(want,
-            reConfirmConn_, nullptr, DEFAULT_VALUE_MINUS_ONE);
+    switch (dialogType) {
+        case ShortKeyDialogType::FUNCTION_SELECT:
+            functionSelectConn_ = new(std::nothrow) ShortkeyAbilityConnection(commandStr);
+            if (functionSelectConn_ == nullptr) {
+                HILOG_ERROR("connection_ is nullptr.");
+                IPCSkeleton::SetCallingIdentity(identity);
+                return false;
+            }
+            ret = AAFwk::ExtensionManagerClient::GetInstance().ConnectServiceExtensionAbility(want,
+                functionSelectConn_, nullptr, DEFAULT_VALUE_MINUS_ONE);
+            break;
+        case ShortKeyDialogType::READER_EXCLUSIVE:
+            readerExclusiveConn_ = new(std::nothrow) ExclusiveAbilityConnection(commandStr);
+            if (readerExclusiveConn_ == nullptr) {
+                HILOG_ERROR("connection_ is nullptr.");
+                IPCSkeleton::SetCallingIdentity(identity);
+                return false;
+            }
+            ret = AAFwk::ExtensionManagerClient::GetInstance().ConnectServiceExtensionAbility(want,
+                readerExclusiveConn_, nullptr, DEFAULT_VALUE_MINUS_ONE);
+            break;
+        case ShortKeyDialogType::RECONFIRM:
+            reConfirmConn_ = new(std::nothrow) ReConfirmAbilityConnection(commandStr);
+            if (reConfirmConn_ == nullptr) {
+                HILOG_ERROR("connection_ is nullptr.");
+                IPCSkeleton::SetCallingIdentity(identity);
+                return false;
+            }
+            ret = AAFwk::ExtensionManagerClient::GetInstance().ConnectServiceExtensionAbility(want,
+                reConfirmConn_, nullptr, DEFAULT_VALUE_MINUS_ONE);
+            break;
+        case ZOOM_GESTURE_CONFLICT:
+            zoomGestureConflictConn_ = new(std::nothrow) ZoomGestureConflictAbilityConnection(commandStr);
+            if (zoomGestureConflictConn_ == nullptr) {
+                HILOG_ERROR("connection_ is nullptr.");
+                IPCSkeleton::SetCallingIdentity(identity);
+                return false;
+            }
+            ret = AAFwk::ExtensionManagerClient::GetInstance().ConnectServiceExtensionAbility(want,
+                zoomGestureConflictConn_, nullptr, DEFAULT_VALUE_MINUS_ONE);
+            break;
+        default:
+            HILOG_ERROR("unknown type");
     }
     HILOG_DEBUG("ret is: %{public}d.", ret);
     // set current callingIdentify back.
@@ -257,37 +318,40 @@ bool AccessibilityShortkeyDialog::ConnectExtension(ShortKeyDialogType dialogType
 
 bool AccessibilityShortkeyDialog::DisconnectExtension(ShortKeyDialogType dialogType) const
 {
-    if (dialogType == ShortKeyDialogType::FUNCTION_SELECT) {
-        if (functionSelectConn_ == nullptr) {
-            return true;
-        }
-        ErrCode ret = AAFwk::ExtensionManagerClient::GetInstance().DisconnectAbility(functionSelectConn_);
-        if (ret != ERR_OK) {
-            HILOG_ERROR("disconnect extension ability failed ret: %{public}d.", ret);
-            return false;
-        }
-        return true;
-    } else if (dialogType == ShortKeyDialogType::READER_EXCLUSIVE) {
-        if (readerExclusiveConn_ == nullptr) {
-            return true;
-        }
-        ErrCode ret = AAFwk::ExtensionManagerClient::GetInstance().DisconnectAbility(readerExclusiveConn_);
-        if (ret != ERR_OK) {
-            HILOG_ERROR("disconnect extension ability failed ret: %{public}d.", ret);
-            return false;
-        }
-        return true;
-    } else {
-        if (reConfirmConn_ == nullptr) {
-            return true;
-        }
-        ErrCode ret = AAFwk::ExtensionManagerClient::GetInstance().DisconnectAbility(reConfirmConn_);
-        if (ret != ERR_OK) {
-            HILOG_ERROR("disconnect extension ability failed ret: %{public}d.", ret);
-            return false;
-        }
-        return true;
+    ErrCode ret = ERR_OK;
+    switch (dialogType) {
+        case ShortKeyDialogType::FUNCTION_SELECT:
+            if (functionSelectConn_ == nullptr) {
+                return true;
+            }
+            ret = AAFwk::ExtensionManagerClient::GetInstance().DisconnectAbility(functionSelectConn_);
+            break;
+        case ShortKeyDialogType::READER_EXCLUSIVE:
+            if (readerExclusiveConn_ == nullptr) {
+                return true;
+            }
+            ret = AAFwk::ExtensionManagerClient::GetInstance().DisconnectAbility(readerExclusiveConn_);
+            break;
+        case ShortKeyDialogType::RECONFIRM:
+            if (reConfirmConn_ == nullptr) {
+                return true;
+            }
+            ret = AAFwk::ExtensionManagerClient::GetInstance().DisconnectAbility(reConfirmConn_);
+            break;
+        case ShortKeyDialogType::ZOOM_GESTURE_CONFLICT:
+            if (zoomGestureConflictConn_ == nullptr) {
+                return true;
+            }
+            ret = AAFwk::ExtensionManagerClient::GetInstance().DisconnectAbility(zoomGestureConflictConn_);
+            break;
+        default:
+            HILOG_ERROR("unkonwn type");
     }
+    if (ret != ERR_OK) {
+        HILOG_ERROR("disconnect extension ability failed ret: %{public}d.", ret);
+        return false;
+    }
+    return true;
 }
 
 std::string AccessibilityShortkeyDialog::BuildStartCommand()

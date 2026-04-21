@@ -54,6 +54,8 @@ using MagnificationScaleCallback = void(*)(float scale);   // set
 using GetAccessibilityWindowsCallback = std::vector<AccessibilityWindowInfo>(*)(uint64_t displayId);   // get
 using SubscribeOsAccountCallback = void(*)();
 using CheckDisplayIdCallback = bool(*)(uint64_t displayId);
+using NotifyZoomGesutureConflictDialogCallback = bool(*)();
+using GetNotifyZoomGestureConflictCallback = bool(*)();
 
 class ExtendServiceManager {
     DECLARE_SINGLETON(ExtendServiceManager);
@@ -115,6 +117,8 @@ public:
     GetAccessibilityWindowsCallback getAccessibilityWindowsCallback = nullptr;
     SubscribeOsAccountCallback subscribeOsAccountCallback = nullptr;
     CheckDisplayIdCallback checkDisplayIdCallback = nullptr;
+    NotifyZoomGesutureConflictDialogCallback notifyZoomGesutureConflictDialogCallback = nullptr;
+    GetNotifyZoomGestureConflictCallback getNotifyZoomGestureConflictCallback = nullptr;
 
     void SetTouchEventInjector(const sptr<TouchEventInjector> &touchEventInjector);
 
