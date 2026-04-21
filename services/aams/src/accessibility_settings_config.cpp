@@ -1239,7 +1239,7 @@ void AccessibilitySettingsConfig::InitSetting()
     screenMagnificationScale_.store(static_cast<float>(
         datashare_->GetFloatValue(SCREEN_MAGNIFICATION_SCALE, DEFAULT_MAGNIFICATION_SCALE)));
     screenMagnificationTriggerMethod_.store(static_cast<int32_t>(
-        datashare_->GetFloatValue(SCREEN_MAGNIFICATION_TRIGGER_METHOD, THREE_FINGER_DOUBLE_TAP_MODE)));
+        datashare_->GetIntValue(SCREEN_MAGNIFICATION_TRIGGER_METHOD, THREE_FINGER_DOUBLE_TAP_MODE)));
     clickResponseTime_.store(static_cast<uint32_t>(datashare_->GetIntValue(CLICK_RESPONCE_TIME, 0)));
     SetClickResponseTime(clickResponseTime_.load());
     ignoreRepeatClickTime_.store(static_cast<uint32_t>(datashare_->GetIntValue(IGNORE_REPEAT_CLICK_TIME, 0)));

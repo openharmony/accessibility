@@ -109,12 +109,13 @@ private:
     void OnZoom(int32_t centerX, int32_t centerY, bool showMenu);
     void OffZoom();
     void OnScroll(float offsetX, float offsetY);
+    void PersistScale();
     void Clear();
 
     void DoNothingHandler(MMI::PointerEvent &event);
     void HandleSTReadyInitStateDown(MMI::PointerEvent &event);
-    void HandleSTReadyStateUp(MMI::PointerEvent &event);
-    void HandleSTReadyStateMove(MMI::PointerEvent &event);
+    void HandleSTReadyOneFingerDownStateUp(MMI::PointerEvent &event);
+    void HandleSTReadyOneFingerDownStateMove(MMI::PointerEvent &event);
     void HandleSTReadyOneFingerTapStateDown(MMI::PointerEvent &event);
 
     void HandleSTZoomInitStateDown(MMI::PointerEvent &event);
@@ -164,6 +165,7 @@ private:
     float multiTapDistance_ = 0.0f;
     float baseDistance_ = 0.0f;
     float lastDistance_ = 0.0f;
+    float scale_ = DEFAULT_SCALE;
     uint64_t screenId_ = -1;
     uint32_t screenWidth_ = 0;
     uint32_t screenHeight_ = 0;
@@ -176,6 +178,7 @@ private:
     bool isTapOnWindowHotArea_ = false;
     bool isTapOnWindow_ = false;
     bool hasScaled_ = false;
+    bool hasNotifyConflict_ = false;
     OHOS::Rosen::DisplayOrientation orientation_ =
         OHOS::Rosen::DisplayOrientation::UNKNOWN;
     ZOOM_FOCUS_COORDINATE lastCenter = {0.0f, 0.0f};

@@ -117,6 +117,8 @@ public:
     bool ExtendGetAccessibilityWindowsCallback();
     bool ExtendSubscribeOsAccountCallback();
     bool SetCheckDisplayIdCallback();
+    bool SetNotifyZoomGesutureConflictDialogCallback();
+    bool SetGetNotifyZoomGestureConflictCallback();
  
 private:
     void* GetFunc(const std::string& funcName);
