@@ -150,10 +150,7 @@ void MagnificationManager::OnModeChanged(uint32_t mode)
     }
     Singleton<ExtendServiceManager>::GetInstance().magnificationModeCallback(static_cast<int32_t>(mode));
     currentMode_ = mode;
-    if (needShow) {
-        interceptor->StartMagnificationInteract(mode);
-    }
-    Singleton<ExtendServiceManager>::GetInstance().updateInputFilterCallback();
+    interceptor->SetMagnificationMode(mode);
 }
 
 void MagnificationManager::DisableMagnification()

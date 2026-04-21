@@ -91,8 +91,6 @@ namespace {
  
     // Feature flag for window magnification.
     static constexpr uint32_t FEATURE_WINDOW_MAGNIFICATION = 0x00000100;
- 
-    static constexpr uint32_t WINDOW_MAGNIFICATION = 2;
 } // namespace
 
 AccessibilityAccountData::AccessibilityAccountData(int32_t accountId)

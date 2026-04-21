@@ -63,6 +63,8 @@ constexpr uint32_t WINDOW_MAGNIFICATION = 2;
 constexpr uint32_t SWITCH_MAGNIFICATION = 3;
 constexpr uint32_t INPUT_METHOD_WINDOW_TYPE = 2105;
 constexpr uint32_t ORANGE_COLOR = 0xFFFFA500;
+constexpr int32_t SINGLE_FINGER_TRIPLE_TAP_MODE = 0;
+constexpr int32_t THREE_FINGER_DOUBLE_TAP_MODE = 1;
 
 constexpr uint32_t INVALID_GESTURE_TYPE = 0;
 constexpr uint32_t LEFT_BACK_GESTURE = 1; // Swipe from the left side of the screen inward

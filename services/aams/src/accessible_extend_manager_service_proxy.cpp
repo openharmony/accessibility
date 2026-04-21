@@ -18,6 +18,7 @@
 #define private public
 #define protected public
 #include "accessible_ability_manager_service.h"
+#include "accessibility_short_key_dialog.h"
 #undef private
 #undef protected
 #include "accessibility_window_manager.h"
@@ -29,6 +30,7 @@ namespace OHOS {
 namespace Accessibility {
 namespace {
     const std::string extendServiceName_ = "libaams_ext.z.so";
+    const char* ZOOM_GESTURE_CONFLICT_DIALOG_OPEN = "accessibility_zoom_gesture_conflict_dialog_open";
 }
 
 ExtendManagerServiceProxy::ExtendManagerServiceProxy()
@@ -78,6 +80,7 @@ bool ExtendManagerServiceProxy::LoadExtProxy()
         SetSendPointerEventForHoverCallback();
         SetGetDelayTimeCallback();
         SetGetMagnificationStateCallback();
+        ExtendGetMagnificationTriggerMethodCallback();
         ExtendGetMagnificationModeCallback();
         ExtendGetMagnificationScaleCallback();
         ExtendUpdateInputFilterCallback();
@@ -89,6 +92,8 @@ bool ExtendManagerServiceProxy::LoadExtProxy()
         ExtendGetAccessibilityWindowsCallback();
         ExtendSubscribeOsAccountCallback();
         SetCheckDisplayIdCallback();
+        SetNotifyZoomGesutureConflictDialogCallback();
+        SetGetNotifyZoomGestureConflictCallback();
     }
     if (!handle_) {
         HILOG_ERROR("dlopen error: %{public}s", dlerror());
@@ -302,6 +307,69 @@ bool ExtendManagerServiceProxy::SetCheckDisplayIdCallback()
     using SetCallback = void (*)(CheckDisplayIdCallback cb);
     SetCallback setCallback = (SetCallback)GetFunc("SetCheckDisplayIdCallback");
     setCallback(CheckDisplayId);
+    return true;
+}
+
+static bool NotifyZoomGesutureConflictDialog()
+{
+    std::shared_ptr<AccessibilityShortkeyDialog> shortkeyDialog = std::make_shared<AccessibilityShortkeyDialog>();
+    if (!shortkeyDialog) {
+        HILOG_DEBUG("shortDialog is null");
+        return false;
+    }
+    if (!shortkeyDialog->ConnectDialog(ShortKeyDialogType::ZOOM_GESTURE_CONFLICT)) {
+        HILOG_ERROR("connect dialog zoom gesture conflict failed");
+        return false;
+    }
+    auto account = Singleton<AccessibleAbilityManagerService>::GetInstance().GetCurrentAccountData();
+    if (!account) {
+        HILOG_DEBUG("account is null");
+        return false;
+    }
+    auto config = account->GetConfig();
+    if (!config) {
+        HILOG_DEBUG("config is null");
+        return false;
+    }
+    auto dbHandler = config->GetDbHandle();
+    if (!dbHandler) {
+        HILOG_DEBUG("dbHandler is null");
+        return false;
+    }
+    dbHandler->PutBoolValue(ZOOM_GESTURE_CONFLICT_DIALOG_OPEN, true);
+    return true;
+}
+
+bool ExtendManagerServiceProxy::SetNotifyZoomGesutureConflictDialogCallback()
+{
+    if (!handle_) {
+        HILOG_ERROR("Extension Proxy is not load");
+        return false;
+    }
+    using NotifyZoomGesutureConflictDialogCallback = bool (*)();
+    using SetCallback = void (*)(NotifyZoomGesutureConflictDialogCallback cb);
+    SetCallback setCallback = (SetCallback)GetFunc("SetNotifyZoomGesutureConflictDialogCallback");
+    setCallback(NotifyZoomGesutureConflictDialog);
+    return true;
+}
+
+static bool GetNotifyZoomGestureConflict()
+{
+    HILOG_DEBUG();
+    return Singleton<AccessibleAbilityManagerService>::GetInstance()
+        .GetCurrentAccountData()->GetConfig()->GetDbHandle()->GetBoolValue(ZOOM_GESTURE_CONFLICT_DIALOG_OPEN, false);
+}
+ 
+bool ExtendManagerServiceProxy::SetGetNotifyZoomGestureConflictCallback()
+{
+    if (!handle_) {
+        HILOG_ERROR("Extension Proxy is not load");
+        return false;
+    }
+    using GetNotifyZoomGestureConflictCallback = bool (*)();
+    using SetCallback = void (*)(GetNotifyZoomGestureConflictCallback cb);
+    SetCallback setCallback = (SetCallback)GetFunc("SetGetNotifyZoomGestureConflictCallback");
+    setCallback(GetNotifyZoomGestureConflict);
     return true;
 }
 
@@ -768,6 +836,27 @@ void ExtendManagerServiceProxy::TransitionAnimationsDestroyTimers()
     return func();
 }
 
+void ExtendManagerServiceProxy::OnScreenMagnificationTriggerMethodChanged(int32_t screenMagnificationTriggerMethod)
+{
+    using OnScreenMagnificationTriggerMethodChanged = void(*)(int32_t screenMagnificationTriggerMethod);
+    static OnScreenMagnificationTriggerMethodChanged func;
+    if (!handle_) {
+        HILOG_ERROR("handle is null");
+        return;
+    }
+    if (!func || readyFunc_.find(ExtMethod::ON_SCREEN_MAGNIFICATION_TRIGGER_METHOD_CHANGE) == readyFunc_.end()) {
+        func = (OnScreenMagnificationTriggerMethodChanged)GetFunc("OnScreenMagnificationTriggerMethodChanged");
+        if (func) {
+            readyFunc_.insert(ExtMethod::ON_SCREEN_MAGNIFICATION_TRIGGER_METHOD_CHANGE);
+            return func(screenMagnificationTriggerMethod);
+        } else {
+            HILOG_ERROR("get OnScreenMagnificationTriggerMethodChanged func failed");
+            return;
+        }
+    }
+    return func(screenMagnificationTriggerMethod);
+}
+
 void ExtendManagerServiceProxy::OnScreenMagnificationTypeChanged(uint32_t screenMagnificationType)
 {
     using OnScreenMagnificationTypeChanged = void(*)(uint32_t screenMagnificationType);
@@ -861,6 +950,24 @@ bool ExtendManagerServiceProxy::CheckExtProxyStatus()
         HILOG_ERROR("Extension Proxy is not load");
         return false;
     }
+    return true;
+}
+
+static int32_t GetMagnificationTriggerMethodCallback()
+{
+    return Singleton<AccessibleAbilityManagerService>::GetInstance().GetMagnificationTriggerMethod();
+}
+ 
+bool ExtendManagerServiceProxy::ExtendGetMagnificationTriggerMethodCallback()
+{
+    using GetMagnificationTriggerMethod = int32_t(*)();
+    using SetCallback = void(*)(GetMagnificationTriggerMethod cb);
+    SetCallback setCallbackFun = (SetCallback)GetFunc("ExtendGetMagnificationTriggerMethodCallback");
+    if (!setCallbackFun) {
+        HILOG_ERROR("setCallbackFun is null");
+        return false;
+    }
+    setCallbackFun(GetMagnificationTriggerMethodCallback);
     return true;
 }
 
