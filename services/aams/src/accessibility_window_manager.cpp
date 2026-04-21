@@ -1230,6 +1230,15 @@ void AccessibilityWindowManager::GetA11yWindowsBundleName(int32_t windowId, std:
     }
 }
 
+bool AccessibilityWindowManager::GetA11yWindowById(int32_t windowId, AccessibilityWindowInfo &window) {
+    std::lock_guard<ffrt::recursive_mutex> lock(interfaceMutex_);
+    if (a11yWindows_.count(windowId)) {
+        window = a11yWindows_[windowId];
+        return true;
+    }
+    return false;
+}
+
 void AccessibilityWindowManager::SetEventInfoBundleName(AccessibilityEventInfo &uiEvent)
 {
     std::lock_guard<ffrt::recursive_mutex> lock(interfaceMutex_);
