@@ -317,12 +317,12 @@ static bool NotifyZoomGesutureConflictDialog()
         HILOG_DEBUG("shortDialog is null");
         return false;
     }
-    if (!shortkeyDialog->ConnectDialog(ShortKeyDialogType::ZOOM_GESTURE_CONFLICT)){
+    if (!shortkeyDialog->ConnectDialog(ShortKeyDialogType::ZOOM_GESTURE_CONFLICT)) {
         HILOG_ERROR("connect dialog zoom gesture conflict failed");
         return false;
     }
     auto account = Singleton<AccessibleAbilityManagerService>::GetInstance().GetCurrentAccountData();
-    if (!account){
+    if (!account) {
         HILOG_DEBUG("account is null");
         return false;
     }

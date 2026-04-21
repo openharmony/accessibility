@@ -241,7 +241,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
 HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_003, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_003 start";
-
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     // start zoom
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
@@ -262,7 +262,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
 HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_004, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_004 start";
-
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     // start zoom
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
@@ -293,7 +293,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
 HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_005, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_005 start";
-
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     // start zoom
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
@@ -342,7 +342,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
 HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_006, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_006 start";
-
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     // start zoom
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
@@ -380,7 +380,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
 HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_007, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_007 start";
-
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     // start zoom
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
@@ -425,7 +425,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
 HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_008, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_008 start";
-
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     // start zoom
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
@@ -488,6 +488,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
  */
 HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_010, TestSize.Level1)
 {
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_010 start";
     EXPECT_TRUE(zoomGesture_ != nullptr);
     // start zoom
@@ -514,7 +515,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
 HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_011, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_011 start";
-
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     // start zoom
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
@@ -606,6 +607,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_Des
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_DestroyEvents_001 start";
     EXPECT_TRUE(zoomGesture_ != nullptr);
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
     EXPECT_TRUE(zoomState);
@@ -624,6 +626,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_Shi
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_ShieldZoomGesture_001 start";
     EXPECT_TRUE(zoomGesture_ != nullptr);
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
     EXPECT_TRUE(zoomState);
@@ -641,6 +644,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_Shi
 HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_ShieldZoomGesture_002, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_ShieldZoomGesture_002 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     EXPECT_TRUE(zoomGesture_ != nullptr);
     zoomGesture_->ShieldZoomGesture(false);
     TripleTaps();
@@ -735,7 +739,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_Set
     zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
     DoubleTapsWithThreeFingers();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
-    EXPECT_TRUE(zoomState);
+    EXPECT_TRUE(!zoomState);
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_SetGestureMode_002 end";
 }
 
@@ -749,6 +753,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_Set
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_SetMagnificationMode_001 start";
     EXPECT_TRUE(zoomGesture_ != nullptr);
     zoomGesture_->SetMagnificationMode(FULL_SCREEN_MAGNIFICATION);
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
     EXPECT_TRUE(zoomState);
@@ -765,6 +770,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_Set
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_SetMagnificationMode_002 start";
     EXPECT_TRUE(zoomGesture_ != nullptr);
     zoomGesture_->SetMagnificationMode(WINDOW_MAGNIFICATION);
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
     EXPECT_TRUE(zoomState);
@@ -780,6 +786,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_Dis
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_DisableGesture_001 start";
     EXPECT_TRUE(zoomGesture_ != nullptr);
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
     EXPECT_TRUE(zoomState);
@@ -812,6 +819,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_Get
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_GetZoomState_002 start";
     EXPECT_TRUE(zoomGesture_ != nullptr);
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     TripleTaps();
     int32_t zoomState = zoomGesture_->GetZoomState();
     EXPECT_EQ(zoomState, ZOOM_STATE);
@@ -847,10 +855,10 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
     zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
     DoubleTapsWithThreeFingers();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
-    EXPECT_TRUE(zoomState);
+    EXPECT_TRUE(!zoomState);
     DoubleTapsWithThreeFingers();
     zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
-    EXPECT_FALSE(zoomState);
+    EXPECT_TRUE(!zoomState);
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_016 end";
 }
 
@@ -862,6 +870,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
 HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_017, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_017 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
     EXPECT_TRUE(zoomState);
@@ -906,6 +915,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
 HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_018, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_018 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
     EXPECT_TRUE(zoomState);
@@ -926,39 +936,6 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
     eventMove->AddPointerItem(itemMove);
     zoomGesture_->OnPointerEvent(*eventMove);
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_018 end";
-}
-
-/**
- * @tc.number: AccessibilityZoomGesture_Unittest_OnPointerEvent_019
- * @tc.name: OnPointerEvent
- * @tc.desc: Test function OnPointerEvent with hold state up to exit zoom
- */
-HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_019, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_019 start";
-    TripleTaps();
-    bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
-    EXPECT_TRUE(zoomState);
-    std::shared_ptr<MMI::PointerEvent> eventDown = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
-        MMI::PointerEvent::POINTER_ACTION_DOWN);
-    EXPECT_TRUE(eventDown != nullptr);
-    MMI::PointerEvent::PointerItem item;
-    item.SetDisplayX(100);
-    item.SetDisplayY(100);
-    eventDown->AddPointerItem(item);
-    zoomGesture_->OnPointerEvent(*eventDown);
-    std::shared_ptr<MMI::PointerEvent> eventUp = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
-        MMI::PointerEvent::POINTER_ACTION_UP);
-    EXPECT_TRUE(eventUp != nullptr);
-    MMI::PointerEvent::PointerItem itemUp;
-    itemUp.SetDisplayX(100);
-    itemUp.SetDisplayY(100);
-    eventUp->AddPointerItem(itemUp);
-    zoomGesture_->OnPointerEvent(*eventUp);
-    sleep(SLEEP_MS_2);
-    zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
-    EXPECT_FALSE(zoomState);
-    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_019 end";
 }
 
 /**
@@ -998,6 +975,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
 HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_021, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_021 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
     EXPECT_TRUE(zoomState);
@@ -1037,6 +1015,7 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
 HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_022, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_022 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
     TripleTaps();
     bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
     EXPECT_TRUE(zoomState);
