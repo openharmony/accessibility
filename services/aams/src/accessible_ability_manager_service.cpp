@@ -1570,6 +1570,10 @@ sptr<AccessibilityAccountData> AccessibleAbilityManagerService::GetCurrentAccoun
 sptr<AccessibilityAccountData> AccessibleAbilityManagerService::GetAccountData(int32_t accountId)
 {
     HILOG_DEBUG();
+    if (currentAccountId_ == -1) {
+        HILOG_ERROR("account id is wrong");
+        return nullptr;
+    }
     return a11yAccountsData_.GetAccountData(accountId);
 }
 
@@ -1632,13 +1636,6 @@ void AccessibleAbilityManagerService::RemovedUser(int32_t accountId)
         HILOG_ERROR("Remove user failed, this account is current account.");
         return;
     }
-
-    auto accountData = a11yAccountsData_.RemoveAccountData(accountId);
-    if (accountData) {
-        accountData->GetConfig()->ClearData();
-        return;
-    }
-
     HILOG_ERROR("accountId is not exist");
 }
 
