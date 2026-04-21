@@ -64,6 +64,7 @@ void MagnificationWindow::CreateMagnificationWindow()
     windowOption->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FLOATING);
     windowOption->SetWindowRect(windowRect_);
     windowOption->SetFocusable(false);
+    windowOption->SetTouchable(false);
     window_ = OHOS::Rosen::Window::Create(WINDOW_NAME, windowOption);
     if (window_ == nullptr) {
         HILOG_ERROR("window create failed.");
