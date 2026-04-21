@@ -1298,11 +1298,6 @@ void AccessibilitySettingsConfig::Init()
     }
 }
 
-void AccessibilitySettingsConfig::ClearData()
-{
-    HILOG_DEBUG();
-}
-
 void AccessibilitySettingsConfig::CloneAudioState()
 {
     HILOG_DEBUG();
