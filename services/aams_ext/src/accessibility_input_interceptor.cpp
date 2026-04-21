@@ -386,6 +386,8 @@ void AccessibilityInputInterceptor::UpdateInterceptor()
 
     if (interceptorId_ >= 0) {
         inputManager_->RemoveInterceptor(interceptorId_);
+        HILOG_INFO("enable intercetrion of triple-finger snapshots");
+        inputManager_->SwitchScreenCapturePermission(MMI::TRIPLE_FINGER_SNAPSHOT, true);
         interceptorId_ = -1;
     }
 
@@ -397,6 +399,10 @@ void AccessibilityInputInterceptor::UpdateInterceptor()
         (availableFunctions_ & FEATURE_SCREEN_TOUCH)) {
             inputEventConsumer_ = std::make_shared<AccessibilityInputEventConsumer>();
             interceptorId_ = inputManager_->AddInterceptor(inputEventConsumer_);
+            if (availableFunctions_ & FEATURE_TOUCH_EXPLORATION) {
+                HILOG_INFO("disable intercetrion of triple-finger snapshots");
+                inputManager_->SwitchScreenCapturePermission(MMI::TRIPLE_FINGER_SNAPSHOT, false);
+            }
     } else if (availableFunctions_ & FEATURE_FILTER_KEY_EVENTS) {
             inputEventConsumer_ = std::make_shared<AccessibilityInputEventConsumer>();
             interceptorId_ = inputManager_->AddInterceptor(inputEventConsumer_, PRIORITY_EVENT,
@@ -415,6 +421,8 @@ void AccessibilityInputInterceptor::DestroyInterceptor()
     }
     if (interceptorId_ >= 0) {
         inputManager_->RemoveInterceptor(interceptorId_);
+        HILOG_INFO("enable intercetrion of triple-finger snapshots");
+        inputManager_->SwitchScreenCapturePermission(MMI::TRIPLE_FINGER_SNAPSHOT, true);
     }
     interceptorId_ = -1;
 }
