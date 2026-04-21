@@ -18,12 +18,16 @@
 
 #include <gmock/gmock.h>
 #include "accessibility_zoom_gesture.h"
+#include "window_magnification_manager.h"
 
 namespace OHOS {
 namespace Accessibility {
 class MockAccessibilityZoomGesture : public AccessibilityZoomGesture {
 public:
-    MockAccessibilityZoomGesture();
+    MockAccessibilityZoomGesture(
+        std::shared_ptr<FullScreenMagnificationManager> fullScreenManager = nullptr,
+        std::shared_ptr<WindowMagnificationManager> windowMagnificationManager = nullptr,
+        std::shared_ptr<MagnificationMenuManager> menuManager = nullptr);
     ~MockAccessibilityZoomGesture();
 
     MOCK_METHOD1(Triple, bool(MMI::PointerEvent& event));

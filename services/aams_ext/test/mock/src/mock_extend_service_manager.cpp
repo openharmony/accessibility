@@ -110,6 +110,14 @@ static std::vector<AccessibilityWindowInfo> MockGetAccessibilityWindowsCallback(
     std::vector<AccessibilityWindowInfo> result = {};
     return result;
 }
+static int32_t MockGetMagnificationTriggerMethodCallback()
+{
+    return 1;
+}
+static bool MockGetNotifyZoomGestureConflictCallback()
+{
+    return true;
+}
 ExtendServiceManager::ExtendServiceManager()
 {
     InitInputManagerHandler();
@@ -124,7 +132,9 @@ ExtendServiceManager::ExtendServiceManager()
     getDelayTime = MockGetDelayTime;
     dispatchKeyEventCallback = MockDispatchKeyEventCallback;
     getMagnificationModeCallback = MockGetMagnificationModeCallback;
+    getMagnificationTriggerMethodCallback = MockGetMagnificationTriggerMethodCallback;
     getMagnificationScaleCallback = MockGetMagnificationScaleCallback;
+    getNotifyZoomGestureConflictCallback = MockGetNotifyZoomGestureConflictCallback;
     updateInputFilterCallback = MockUpdateInputFilterCallback;
     magnificationModeCallback = MockMagnificationModeCallback;
     magnificationTypeCallback = MockMagnificationTypeCallback;

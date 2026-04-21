@@ -73,6 +73,16 @@ API_EXPORT void SetCheckDisplayIdCallback(
 {
     serviceManagerInstance.checkDisplayIdCallback = cb;
 }
+API_EXPORT void SetNotifyZoomGesutureConflictDialogCallback(
+    OHOS::Accessibility::NotifyZoomGesutureConflictDialogCallback cb)
+{
+    serviceManagerInstance.notifyZoomGesutureConflictDialogCallback = cb;
+}
+API_EXPORT void SetGetNotifyZoomGestureConflictCallback(
+    OHOS::Accessibility::GetNotifyZoomGestureConflictCallback cb)
+{
+    serviceManagerInstance.getNotifyZoomGestureConflictCallback = cb;
+}
 // method export To sa
 API_EXPORT int32_t PublishIgnoreRepeatClickReminder()
 {
@@ -159,6 +169,11 @@ API_EXPORT OHOS::Accessibility::RetError InjectEvents(
 {
     return serviceManagerInstance.InjectEvents(gesturePath);
 }
+API_EXPORT void OnScreenMagnificationTriggerMethodChanged(int32_t screenMagnificationTriggerMethod)
+{
+    HILOG_INFO();
+    return serviceManagerInstance.OnScreenMagnificationTriggerMethodChanged(screenMagnificationTriggerMethod);
+}
 API_EXPORT void OnScreenMagnificationTypeChanged(uint32_t screenMagnificationType)
 {
     HILOG_INFO();
@@ -178,6 +193,12 @@ API_EXPORT void ExtendGetMagnificationModeCallback(OHOS::Accessibility::GetMagni
 {
     HILOG_INFO();
     serviceManagerInstance.getMagnificationModeCallback = cb;
+}
+API_EXPORT void ExtendGetMagnificationTriggerMethodCallback(
+    OHOS::Accessibility::GetMagnificationTriggerMethodCallback cb)
+{
+    HILOG_INFO();
+    serviceManagerInstance.getMagnificationTriggerMethodCallback = cb;
 }
 API_EXPORT void ExtendGetMagnificationScaleCallback(OHOS::Accessibility::GetMagnificationScaleCallback cb)
 {

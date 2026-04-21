@@ -39,6 +39,8 @@ public:
     MOCK_METHOD1(OnKeyEvent, void(MMI::KeyEvent& event));
     MOCK_METHOD1(OnPointerEvent, void(MMI::PointerEvent& event));
     MOCK_METHOD1(SetAvailableFunctions, void(uint32_t availableFunctions));
+    MOCK_METHOD1(SetMagnificationMode, void(uint32_t mode));
+    MOCK_METHOD1(SetMagnificationTriggerMethod, void(int32_t screenMagnificationTriggerMethod));
 };
 } // namespace Accessibility
 } // namespace OHOS

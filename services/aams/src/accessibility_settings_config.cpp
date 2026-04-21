@@ -41,6 +41,7 @@ namespace {
     const char* SCREEN_MAGNIFICATION_TYPE = "accessibility_magnification_capability";
     const char* SCREEN_MAGNIFICATION_MODE = "accessibility_magnification_mode";
     const char* SCREEN_MAGNIFICATION_SCALE = "accessibility_display_magnification_scale";
+    const char* SCREEN_MAGNIFICATION_TRIGGER_METHOD = "accessibility_display_magnification_trigger_method";
     const char* MOUSEKEY = "mousekey";
     const char* HIGH_CONTRAST_TEXT_KEY = "high_text_contrast_enabled";
     const char* DALTONIZATION_STATE = "accessibility_display_daltonizer_enabled";
@@ -202,13 +203,11 @@ RetError AccessibilitySettingsConfig::SetScreenMagnificationState(const bool sta
 {
     HILOG_DEBUG("state = [%{public}s]", state ? "True" : "False");
     auto ret = SetConfigState(SCREEN_MAGNIFICATION_KEY, state);
-    // LCOV_EXCL_BR_START
     if (ret != RET_OK) {
         Utils::RecordDatashareInteraction(A11yDatashareValueType::UPDATE, "SetScreenMagnificationState");
         HILOG_ERROR("set SetScreenMagnificationState failed");
         return ret;
     }
-    // LCOV_EXCL_BR_STOP
     SetMagnificationState(state);
     return ret;
 }
@@ -247,6 +246,14 @@ RetError AccessibilitySettingsConfig::SetScreenMagnificationMode(const uint32_t 
     return RET_OK;
 }
 
+
+RetError AccessibilitySettingsConfig::SetScreenMagnificationTriggerMethod(const int32_t triggerMethod)
+{
+    HILOG_DEBUG("screenMagnificationTriggerMethod = [%{public}d]", triggerMethod);
+    screenMagnificationTriggerMethod_.store(triggerMethod);
+    return RET_OK;
+}
+
 RetError AccessibilitySettingsConfig::SetScreenMagnificationScale(const float scale)
 {
     HILOG_DEBUG("screenMagnificationScale = [%{public}f]", scale);
@@ -258,13 +265,11 @@ RetError AccessibilitySettingsConfig::SetShortKeyState(const bool state)
 {
     HILOG_DEBUG("state = [%{public}s]", state ? "True" : "False");
     auto ret = SetConfigState(SHORTCUT_ENABLED, state);
-    // LCOV_EXCL_BR_START
     if (ret != RET_OK) {
         Utils::RecordDatashareInteraction(A11yDatashareValueType::UPDATE, "SetShortKeyState");
         HILOG_ERROR("set isShortKeyState_ failed");
         return ret;
     }
-    // LCOV_EXCL_BR_STOP
     isShortKeyState_.store(state);
     return ret;
 }
@@ -319,13 +324,11 @@ RetError AccessibilitySettingsConfig::SetMouseKeyState(const bool state)
 {
     HILOG_DEBUG("state = [%{public}s]", state ? "True" : "False");
     auto ret = SetConfigState(MOUSEKEY, state);
-    // LCOV_EXCL_BR_START
     if (ret != RET_OK) {
         Utils::RecordDatashareInteraction(A11yDatashareValueType::UPDATE, "SetMouseKeyState");
         HILOG_ERROR("set isMouseKeyState_ failed");
         return ret;
     }
-    // LCOV_EXCL_BR_STOP
     isMouseKeyState_.store(state);
     return ret;
 }
@@ -357,13 +360,11 @@ RetError AccessibilitySettingsConfig::SetShortkeyTarget(const std::string &name)
     }
 
     auto ret = datashare_->PutStringValue("ShortkeyTarget", name);
-    // LCOV_EXCL_BR_START
     if (ret != RET_OK) {
         Utils::RecordDatashareInteraction(A11yDatashareValueType::UPDATE, "SetShortkeyTarget");
         HILOG_ERROR("set shortkeyTarget_ failed");
         return ret;
     }
-    // LCOV_EXCL_BR_STOP
     shortkeyTarget_ = name;
     return ret;
 }
@@ -890,6 +891,11 @@ float AccessibilitySettingsConfig::GetScreenMagnificationScale() const
     return screenMagnificationScale_.load();
 }
 
+int32_t AccessibilitySettingsConfig::GetScreenMagnificationTriggerMethod() const
+{
+    return screenMagnificationTriggerMethod_.load();
+}
+
 bool AccessibilitySettingsConfig::GetIgnoreRepeatClickState() const
 {
     return ignoreRepeatClickState_.load();
@@ -1149,7 +1155,6 @@ void AccessibilitySettingsConfig::InitAnimationOffConfig()
     }
 }
 
-// LCOV_EXCL_START
 void AccessibilitySettingsConfig::HandleIgnoreRepeatClickState()
 {
     int64_t recoveryDate = datashare_->GetLongValue(RECOVERY_IGNORE_REPEAT_CLICK_DATE, 0);
@@ -1235,6 +1240,8 @@ void AccessibilitySettingsConfig::InitSetting()
         datashare_->GetIntValue(SCREEN_MAGNIFICATION_MODE, FULL_SCREEN_MAGNIFICATION)));
     screenMagnificationScale_.store(static_cast<float>(
         datashare_->GetFloatValue(SCREEN_MAGNIFICATION_SCALE, DEFAULT_MAGNIFICATION_SCALE)));
+    screenMagnificationTriggerMethod_.store(static_cast<int32_t>(
+        datashare_->GetIntValue(SCREEN_MAGNIFICATION_TRIGGER_METHOD, THREE_FINGER_DOUBLE_TAP_MODE)));
     clickResponseTime_.store(static_cast<uint32_t>(datashare_->GetIntValue(CLICK_RESPONCE_TIME, 0)));
     SetClickResponseTime(clickResponseTime_.load());
     ignoreRepeatClickTime_.store(static_cast<uint32_t>(datashare_->GetIntValue(IGNORE_REPEAT_CLICK_TIME, 0)));
@@ -1519,7 +1526,6 @@ void AccessibilitySettingsConfig::recoverAudioAdjustment()
         SetAudioBalance(audioBalance_.load());
     }
 }
-// LCOV_EXCL_STOP
 
 void AccessibilitySettingsConfig::OnDataClone()
 {
@@ -1545,7 +1551,6 @@ void AccessibilitySettingsConfig::OnDataClone()
     } else {
         SetShortKeyOnLockScreenState(false);
     }
-
     
     if (isShortkeyEnabled != GetShortKeyState()) {
         SetShortKeyState(isShortkeyEnabled);

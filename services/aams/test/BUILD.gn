@@ -484,6 +484,7 @@ ohos_unittest("accessible_ability_channel_test") {
     "../src/accessibility_resource_bundle_manager.cpp",
     "../src/accessibility_setting_observer.cpp",
     "../src/accessibility_window_connection.cpp",
+    "../src/accessibility_short_key_dialog.cpp",
     "../src/accessible_ability_channel.cpp",
     "../src/accessible_ability_connection.cpp",
     "../src/accessible_extend_manager_service_proxy.cpp",

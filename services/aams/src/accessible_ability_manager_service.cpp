@@ -84,6 +84,8 @@ namespace {
     const char* SCREEN_MAGNIFICATION_MODE = "accessibility_magnification_mode";
     const char* ELDER_CARE_ENABLED_KEY = "accessibility_elder_care_switch_enabled";
     const char* SCREEN_MAGNIFICATION_SCALE = "accessibility_display_magnification_scale";
+    const char* SCREEN_MAGNIFICATION_TRIGGER_METHOD = "accessibility_display_magnification_trigger_method";
+    const char* ZOOM_GESTURE_CONFLICT_DIALOG_OPEN = "accessibility_zoom_gesture_conflict_dialog_open";
     const char* MAGNIFICATION_PARAM = "const.accessibility.magnification";
     const char* VOICE_RECOGNITION_KEY = "accessibility_sound_recognition_switch";
     const char* VOICE_RECOGNITION_TYPES = "accessibility_sound_recognition_enabled";
@@ -3019,6 +3021,43 @@ void AccessibleAbilityManagerService::OnScreenMagnificationScaleChanged()
     SetConfigScreenMagnificationScale(screenMagnificationScale);
 }
 
+void AccessibleAbilityManagerService::SetConfigScreenMagnificationTriggerMethod(int32_t triggerMethod)
+{
+    HILOG_DEBUG();
+ 
+    sptr<AccessibilityAccountData> accountData = GetCurrentAccountData();
+    if (accountData == nullptr) {
+        HILOG_ERROR("accountData is nullptr");
+        return;
+    }
+ 
+    std::shared_ptr<AccessibilitySettingsConfig> config = accountData->GetConfig();
+    if (config == nullptr) {
+        HILOG_ERROR("config is nullptr");
+        return;
+    }
+    config->SetScreenMagnificationTriggerMethod(triggerMethod);
+}
+ 
+void AccessibleAbilityManagerService::OnScreenMagnificationTriggerMethodChanged()
+{
+    HILOG_INFO();
+ 
+    shared_ptr<AccessibilityDatashareHelper> helper = GetCurrentAcountDatashareHelper();
+    if (helper == nullptr) {
+        HILOG_ERROR("datashareHelper is nullptr");
+        return;
+    }
+    int32_t screenMagnificationTriggerMethod = helper->GetIntValue(SCREEN_MAGNIFICATION_TRIGGER_METHOD,
+        THREE_FINGER_DOUBLE_TAP_MODE);
+ 
+    SetConfigScreenMagnificationTriggerMethod(screenMagnificationTriggerMethod);
+    if (Singleton<ExtendManagerServiceProxy>::GetInstance().LoadExtProxy()) {
+        Singleton<ExtendManagerServiceProxy>::GetInstance().
+            OnScreenMagnificationTriggerMethodChanged(screenMagnificationTriggerMethod);
+    }
+}
+
 void AccessibleAbilityManagerService::RegisterScreenMagnificationState()
 {
     HILOG_DEBUG();
@@ -3040,9 +3079,14 @@ void AccessibleAbilityManagerService::RegisterScreenMagnificationState()
         AccessibilitySettingObserver::UpdateFunc scaleFunc = [ = ](const std::string &state) {
             Singleton<AccessibleAbilityManagerService>::GetInstance().OnScreenMagnificationScaleChanged();
         };
+        AccessibilitySettingObserver::UpdateFunc triggerMethodFunc = [ = ](const std::string &state) {
+            Singleton<AccessibleAbilityManagerService>::GetInstance().OnScreenMagnificationTriggerMethodChanged();
+        };
         if (accountData->GetConfig()->GetDbHandle()) {
             accountData->GetConfig()->GetDbHandle()->RegisterObserver(SCREEN_MAGNIFICATION_KEY, func);
             accountData->GetConfig()->GetDbHandle()->RegisterObserver(SCREEN_MAGNIFICATION_SCALE, scaleFunc);
+            accountData->GetConfig()->GetDbHandle()->RegisterObserver(SCREEN_MAGNIFICATION_TRIGGER_METHOD,
+                triggerMethodFunc);
         }
         }, "REGISTER_SCREEN_ZOOM_OBSERVER");
 }
@@ -3471,6 +3515,23 @@ uint32_t AccessibleAbilityManagerService::GetMagnificationMode()
         return 0;
     }
     return config->GetScreenMagnificationMode();
+}
+
+int32_t AccessibleAbilityManagerService::GetMagnificationTriggerMethod()
+{
+    HILOG_DEBUG();
+    sptr<AccessibilityAccountData> accountData = GetCurrentAccountData();
+    if (accountData == nullptr) {
+        HILOG_ERROR("accountData is nullptr");
+        return 0;
+    }
+ 
+    std::shared_ptr<AccessibilitySettingsConfig> config = accountData->GetConfig();
+    if (config == nullptr) {
+        HILOG_ERROR("config is nullptr");
+        return 0;
+    }
+    return config->GetScreenMagnificationTriggerMethod();
 }
 
 void AccessibleAbilityManagerService::SetMagnificationMode(int32_t mode)
