@@ -54,6 +54,7 @@ public:
     std::vector<AccessibilityWindowInfo> GetAccessibilityWindows();
     bool GetAccessibilityWindow(int32_t windowId, AccessibilityWindowInfo &window);
     void GetA11yWindowsBundleName(int32_t windowId, std::string &bundleName);
+    bool GetA11yWindowById(int32_t windowId, AccessibilityWindowInfo &window);
     void SetEventInfoBundleName(AccessibilityEventInfo &uiEvent);
     void SetEventInfoBundleNameOld(AccessibilityEventInfo &uiEvent, const int32_t windowId,
         std::map<int32_t, AccessibilityWindowInfo> &oldA11yWindows);

@@ -793,22 +793,50 @@ void ElementOperatorManager::CalculateClickPosition(const AccessibilityElementIn
     int32_t &xPos, int32_t &yPos)
 {
     Rect focusElement = focusedElementInfo.GetRectInScreen();
-    int32_t displayWidth = 0;
-    int32_t displayHeight = 0;
-    if (Singleton<ExtendManagerServiceProxy>::GetInstance().CheckExtProxyStatus()) {
-        Singleton<ExtendManagerServiceProxy>::GetInstance().GetClickPosition(xPos, yPos);
+    int32_t boundLeftTopXPos = 0;
+    int32_t boundRightBottomXPos = 0;
+    int32_t boundLeftTopYpos = 0;
+    int32_t boundRightBottomYPos = 0;
+    int32_t windowId = focusWindowId_.load();
+    AccessibilityWindowInfo focusWindowInfo;
+
+    sptr<AccessibilityAccountData> accountData = accountData_.promote();
+    if (!accountData) {
+        HILOG_ERROR("accountData is nullptr");
+        return;
     }
+
+    if (accountData->GetWindowManager().GetA11yWindowById(windowId, focusWindowInfo)) {
+        Rect winRect = focusWindowInfo.GetRectInScreen();
+        boundLeftTopXPos = winRect.GetLeftTopXScreenPostion();
+        boundRightBottomXPos = winRect.GetRightBottomXScreenPostion();
+        boundLeftTopYpos = winRect.GetLeftTopYScreenPostion();
+        boundRightBottomYPos = winRect.GetRightBottomYScreenPostion();
+    } else if (accountData->GetWindowManager().GetAccessibilityWindow(windowId, focusWindowInfo)) {
+        Rect winRect = focusWindowInfo.GetRectInScreen();
+        boundLeftTopXPos = winRect.GetLeftTopXScreenPostion();
+        boundRightBottomXPos = winRect.GetRightBottomXScreenPostion();
+        boundLeftTopYpos = winRect.GetLeftTopYScreenPostion();
+        boundRightBottomYPos = winRect.GetRightBottomYScreenPostion();
+    } else {
+        HILOG_DEBUG("Failed to get window rect!");
+        if (Singleton<ExtendManagerServiceProxy>::GetInstance().CheckExtProxyStatus()) {
+            Singleton<ExtendManagerServiceProxy>::GetInstance().GetClickPosition(
+                boundRightBottomXPos, boundRightBottomYPos);
+        }
+    }
+
     int32_t focusLeftTopXPos = focusElement.GetLeftTopXScreenPostion();
     int32_t focusRightBottomXPos = focusElement.GetRightBottomXScreenPostion();
     int32_t focusLeftTopYpos = focusElement.GetLeftTopYScreenPostion();
     int32_t focusRightBottomYPos = focusElement.GetRightBottomYScreenPostion();
  
-    int32_t leftTopXPos = focusLeftTopXPos > 0 ? focusLeftTopXPos : 0;
-    int32_t leftTopYPos = focusLeftTopYpos > 0 ? focusLeftTopYpos : 0;
-    int32_t rightBottomXPos = displayWidth > 0 && displayWidth < focusRightBottomXPos ?
-        displayWidth : focusRightBottomXPos;
-    int32_t rightBottomYPos = displayHeight > 0 && displayHeight < focusRightBottomYPos ?
-        displayHeight : focusRightBottomYPos;
+    int32_t leftTopXPos = focusLeftTopXPos > boundLeftTopXPos ? focusLeftTopXPos : boundLeftTopXPos;
+    int32_t leftTopYPos = focusLeftTopYpos > boundLeftTopYpos ? focusLeftTopYpos : boundLeftTopYpos;
+    int32_t rightBottomXPos = boundRightBottomXPos > 0 && boundRightBottomXPos < focusRightBottomXPos ?
+        boundRightBottomXPos : focusRightBottomXPos;
+    int32_t rightBottomYPos = boundRightBottomYPos > 0 && boundRightBottomYPos < focusRightBottomYPos ?
+        boundRightBottomYPos : focusRightBottomYPos;
     xPos = leftTopXPos + (rightBottomXPos - leftTopXPos) / DIVISOR_TWO;
     yPos = leftTopYPos + (rightBottomYPos - leftTopYPos) / DIVISOR_TWO;
 }
