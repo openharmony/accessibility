@@ -243,5 +243,15 @@ void AccessibilityWindowManager::SetAccountData(int32_t accountId, const wptr<Ac
     accountId_ = accountId;
     accountData_ = accountData;
 }
+
+bool AccessibilityWindowManager::GetA11yWindowById(int32_t windowId, AccessibilityWindowInfo& window)
+{
+    HILOG_DEBUG("start windowId(%{public}d)", windowId);
+    if (a11yWindows_.count(windowId)) {
+        window = a11yWindows_[windowId];
+        return true;
+    }
+    return false;
+}
 } // namespace Accessibility
 } // namespace OHOS
