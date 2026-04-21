@@ -1671,6 +1671,10 @@ void AccessibleAbilityManagerService::SwitchedUser(int32_t accountId)
         accountData->GetImportantEnabledAbilities(importantEnabledAbilities);
         accountData->OnAccountSwitched();
         accountData->UpdateAccountCapabilities();
+        if (Singleton<ExtendManagerServiceProxy>::GetInstance().CheckExtProxyStatus()) {
+            Singleton<ExtendManagerServiceProxy>::GetInstance().UpdateInputFilter(0);
+            HILOG_INFO("Unregister all multimodal interceptors");
+        }
         UpdateAccessibilityState();
         UpdateShortKeyRegister();
     }
