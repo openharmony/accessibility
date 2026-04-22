@@ -1391,7 +1391,7 @@ void AccessibilityAccountData::StateObservers::AddStateObserver(
  
 void AccessibilityAccountData::StateObservers::OnStateObservers(uint32_t state)
 {
-    HILOG_INFO("state is %{public}d size = %{public}u", state, observersList_.size());
+    HILOG_INFO("state is %{public}d size = %{public}zu", state, observersList_.size());
     std::lock_guard<ffrt::mutex> lock(stateObserversMutex_);
     for (auto& stateObserver : observersList_) {
         if (stateObserver) {
@@ -1403,7 +1403,7 @@ void AccessibilityAccountData::StateObservers::OnStateObservers(uint32_t state)
 void AccessibilityAccountData::StateObservers::RemoveStateObserver(const wptr<IRemoteObject> &remote)
 {
     std::lock_guard<ffrt::mutex> lock(stateObserversMutex_);
-    HILOG_ERROR("stateObservers_ size = %{public}u", observersList_.size());
+    HILOG_ERROR("stateObservers_ size = %{public}zu", observersList_.size());
     auto iter = std::find_if(observersList_.begin(), observersList_.end(),
         [remote](const sptr<IAccessibleAbilityManagerStateObserver>& stateObserver) {
             return stateObserver->AsObject() == remote;
