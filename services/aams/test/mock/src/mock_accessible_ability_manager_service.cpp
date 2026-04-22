@@ -834,7 +834,7 @@ ErrCode AccessibleAbilityManagerService::InnerSendEvent(
     const AccessibilityEventInfoParcel &eventInfoParcel, int32_t flag, int32_t userId)
 {
     HILOG_INFO("AccessibleAbilityManagerService::InnerSendEvent successfully");
-    AccessibilityEventInfo uiEvent = static_cast<AccessibilityEventInfo>(eventInfoParce);
+    AccessibilityEventInfo uiEvent = static_cast<AccessibilityEventInfo>(eventInfoParcel);
     EventType uTeventType = uiEvent.GetEventType();
     AccessibilityAbilityHelper::GetInstance().SetGestureId(uiEvent.GetGestureType());
     AccessibilityAbilityHelper::GetInstance().SetEventTypeVector(uTeventType);
