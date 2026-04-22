@@ -790,27 +790,29 @@ void AccessibilityZoomGesture::OffZoom()
 {
     HILOG_INFO();
     zoomState_ = READY;
-    if (menuManager_ == nullptr) {
-        HILOG_ERROR("menuManager_ is nullptr.");
-        return;
+    if (menuManager_ != nullptr) {
+        HILOG_DEBUG("disable menu window");
+        menuManager_->DisableMenuWindow();
     }
     if (magnificationMode_ == FULL_SCREEN_MAGNIFICATION) {
-        if (fullScreenManager_ == nullptr) {
-            HILOG_ERROR("fullScreenManager_ is nullptr.");
+        if (fullScreenManager_ != nullptr && fullScreenManager_->IsMagnificationWindowShow()) {
+            HILOG_DEBUG("disable full screen magnification");
+            fullScreenManager_->DisableMagnification(false);
+            Singleton<ExtendServiceManager>::GetInstance().announcedForMagnificationCallback(
+                AnnounceType::ANNOUNCE_MAGNIFICATION_DISABLE);
+            ExtUtils::RecordOnZoomGestureEvent("off", true);
             return;
         }
-        fullScreenManager_->DisableMagnification(false);
     } else {
-        if (windowMagnificationManager_ == nullptr) {
-            HILOG_ERROR("windowMagnificationManager_ is nullptr.");
+        if (windowMagnificationManager_ != nullptr && windowMagnificationManager_->IsMagnificationWindowShow()) {
+            HILOG_DEBUG("disable window magnification");
+            windowMagnificationManager_->DisableWindowMagnification();
+            Singleton<ExtendServiceManager>::GetInstance().announcedForMagnificationCallback(
+                AnnounceType::ANNOUNCE_MAGNIFICATION_DISABLE);
+            ExtUtils::RecordOnZoomGestureEvent("off", true);
             return;
         }
-        windowMagnificationManager_->DisableWindowMagnification();
     }
-    menuManager_->DisableMenuWindow();
-    Singleton<ExtendServiceManager>::GetInstance().announcedForMagnificationCallback(
-        AnnounceType::ANNOUNCE_MAGNIFICATION_DISABLE);
-    ExtUtils::RecordOnZoomGestureEvent("off", true);
 }
 
 void AccessibilityZoomGesture::OnScroll(float offsetX, float offsetY)
@@ -989,7 +991,7 @@ void AccessibilityZoomGesture::HandleSTZoomInitStateDown(MMI::PointerEvent &even
     isTapOnMenu_ = menuManager_->IsTapOnMenu(pointerItem.GetDisplayX(), pointerItem.GetDisplayY());
 
     lastDownEvent_ = std::make_shared<MMI::PointerEvent>(event);
-    lastTripleTapEvents_[event.GetPointerId()] = std::make_shared<MMI::PointerEvent>(event);
+    lastTripleTapEvents_[POINTER_ID_0] = std::make_shared<MMI::PointerEvent>(event);
     singleFingerTapCount_ = 0;
     if (isTapOnWindowHotArea_) {
         zoomGestureEventHandler_->SendEvent(HOT_AREA_SLIDING_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
@@ -1022,7 +1024,7 @@ void AccessibilityZoomGesture::HandleSTZoomOneFingerDownStateDown(MMI::PointerEv
         TransferState(PASSING_THROUGH);
         return;
     }
-    lastTripleTapEvents_[event.GetPointerId()] = std::make_shared<MMI::PointerEvent>(event);
+    lastTripleTapEvents_[POINTER_ID_1] = std::make_shared<MMI::PointerEvent>(event);
     if (magnificationMode_ == FULL_SCREEN_MAGNIFICATION || isTapOnWindow_) {
         zoomGestureEventHandler_->SendEvent(TWO_FINGER_SLIDING_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
         CalcFocusCoordinate(event, lastCenter);
@@ -1099,7 +1101,7 @@ void AccessibilityZoomGesture::HandleSTZoomTwoFingerDownStateMove(MMI::PointerEv
         return;
         }
     int32_t pId = event.GetPointerId();
-    if (IsMoveValid(lastTripleTapEvents_[pId], std::make_shared<MMI::PointerEvent>(event))) {
+    if (pId > POINTER_ID_2 || IsMoveValid(lastTripleTapEvents_[pId], std::make_shared<MMI::PointerEvent>(event))) {
         return;
     }
     zoomGestureEventHandler_->RemoveEvent(TWO_FINGER_SLIDING_MSG);
@@ -1586,7 +1588,7 @@ void AccessibilityZoomGesture::HandleTDZoomTwoFingersDownStateMove(MMI::PointerE
         return;
     }
     int32_t pId = event.GetPointerId();
-    if (IsMoveValid(lastTripleTapEvents_[pId], std::make_shared<MMI::PointerEvent>(event))) {
+    if (pId > POINTER_ID_2 || IsMoveValid(lastTripleTapEvents_[pId], std::make_shared<MMI::PointerEvent>(event))) {
         return;
     }
     zoomGestureEventHandler_->RemoveEvent(WAIT_ANOTHER_FINGER_DOWN_MSG);
