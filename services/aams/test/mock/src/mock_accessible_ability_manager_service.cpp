@@ -829,10 +829,26 @@ bool AccessibleAbilityManagerService::InnerGetAccessibilityWindow(
 {
     return true;
 }
- 
+
 ErrCode AccessibleAbilityManagerService::InnerSendEvent(
     const AccessibilityEventInfoParcel &eventInfoParcel, int32_t flag, int32_t userId)
 {
+    HILOG_INFO("AccessibleAbilityManagerService::InnerSendEvent successfully");
+    AccessibilityEventInfo uiEvent = static_cast<AccessibilityEventInfo>(eventInfoParce);
+    EventType uTeventType = uiEvent.GetEventType();
+    AccessibilityAbilityHelper::GetInstance().SetGestureId(uiEvent.GetGestureType());
+    AccessibilityAbilityHelper::GetInstance().SetEventTypeVector(uTeventType);
+    AccessibilityAbilityHelper::GetInstance().SetEventWindowId(uiEvent.GetWindowId());
+    AccessibilityAbilityHelper::GetInstance().SetEventWindowChangeType(uiEvent.GetWindowChangeTypes());
+    GTEST_LOG_(INFO) << "###AccessibleAbilityManagerService::InnerSendEvent GetGestureType="
+                    << (int32_t)uiEvent.GetGestureType();
+    GTEST_LOG_(INFO) << "###AccessibleAbilityManagerService::InnerSendEvent uTeventType=0x" << std::hex
+                    << (int32_t)uTeventType;
+
+    handler_->PostTask(std::bind([=]() -> void {
+        HILOG_DEBUG("start");
+        AccessibilityAbilityHelper::GetInstance().AddSendEventTimes();
+        }), "TASK_SEND_EVENT");
     return RET_OK;
 }
 } // namespace Accessibility
