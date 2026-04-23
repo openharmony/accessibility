@@ -1513,6 +1513,7 @@ HWTEST_F(AccessibilityWindowManagerTest, AccessibilityWindowManager_Unittest_Cle
     windowConnection->SetProxy(0, proxy);
     accountData->RemoveAccessibilityWindowConnection(ACTIVE_WINDOW_ID);
     accountData->AddAccessibilityWindowConnection(ACTIVE_WINDOW_ID, windowConnection);
+    mgr.SetAccountData(ACCOUNT_ID, accountData);
     /* ClearAccessibilityFocused */
     mgr.ClearAccessibilityFocused();
     /* test */
