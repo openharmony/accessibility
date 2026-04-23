@@ -1120,5 +1120,1259 @@ HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnP
     EXPECT_EQ(state, READY_STATE);
     GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_024 end";
 }
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_OnPointerEvent_025
+ * @tc.name: OnPointerEvent
+ * @tc.desc: Test three finger double tap mode with invalid pointer count
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_025, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_025 start";
+    zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
+    std::shared_ptr<MMI::PointerEvent> eventDown = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown != nullptr);
+    MMI::PointerEvent::PointerItem item1;
+    item1.SetDisplayX(10);
+    item1.SetDisplayY(20);
+    eventDown->AddPointerItem(item1);
+    MMI::PointerEvent::PointerItem item2;
+    item2.SetDisplayX(40);
+    item2.SetDisplayY(20);
+    eventDown->AddPointerItem(item2);
+    AccessibilityAbilityHelper::GetInstance().ClearTouchEventActionVector();
+    zoomGesture_->OnPointerEvent(*eventDown);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, READY_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_025 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_OnPointerEvent_026
+ * @tc.name: OnPointerEvent
+ * @tc.desc: Test three finger double tap mode with two fingers down then move
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_026, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_026 start";
+    zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 10, 10);
+    MMI::PointerEvent::PointerItem point1 = {};
+    SetPointerItem(point1, POINT_ID_1, 20, 20);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    std::vector<MMI::PointerEvent::PointerItem> points1 = {point0, point1};
+    std::shared_ptr<MMI::PointerEvent> eventDown1 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points1, POINT_ID_1);
+    EXPECT_TRUE(eventDown1 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown1);
+    MMI::PointerEvent::PointerItem itemMove0 = {};
+    itemMove0.SetPointerId(POINT_ID_0);
+    itemMove0.SetDisplayX(15);
+    itemMove0.SetDisplayY(15);
+    MMI::PointerEvent::PointerItem itemMove1 = {};
+    itemMove1.SetPointerId(POINT_ID_1);
+    itemMove1.SetDisplayX(25);
+    itemMove1.SetDisplayY(25);
+    std::vector<MMI::PointerEvent::PointerItem> pointsMove = {itemMove0, itemMove1};
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_MOVE, pointsMove, POINT_ID_0);
+    EXPECT_TRUE(eventMove != nullptr);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, READY_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_026 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_OnPointerEvent_027
+ * @tc.name: OnPointerEvent
+ * @tc.desc: Test three finger double tap mode with three fingers down then move
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_027, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_027 start";
+    zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 10, 10);
+    MMI::PointerEvent::PointerItem point1 = {};
+    SetPointerItem(point1, POINT_ID_1, 20, 20);
+    MMI::PointerEvent::PointerItem point2 = {};
+    SetPointerItem(point2, POINT_ID_2, 30, 30);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    std::vector<MMI::PointerEvent::PointerItem> points1 = {point0, point1};
+    std::shared_ptr<MMI::PointerEvent> eventDown1 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points1, POINT_ID_1);
+    EXPECT_TRUE(eventDown1 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown1);
+    std::vector<MMI::PointerEvent::PointerItem> points2 = {point0, point1, point2};
+    std::shared_ptr<MMI::PointerEvent> eventDown2 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points2, POINT_ID_2);
+    EXPECT_TRUE(eventDown2 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown2);
+    MMI::PointerEvent::PointerItem itemMove0 = {};
+    itemMove0.SetPointerId(POINT_ID_0);
+    itemMove0.SetDisplayX(15);
+    itemMove0.SetDisplayY(15);
+    MMI::PointerEvent::PointerItem itemMove1 = {};
+    itemMove1.SetPointerId(POINT_ID_1);
+    itemMove1.SetDisplayX(25);
+    itemMove1.SetDisplayY(25);
+    MMI::PointerEvent::PointerItem itemMove2 = {};
+    itemMove2.SetPointerId(POINT_ID_2);
+    itemMove2.SetDisplayX(35);
+    itemMove2.SetDisplayY(35);
+    std::vector<MMI::PointerEvent::PointerItem> pointsMove = {itemMove0, itemMove1, itemMove2};
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_MOVE, pointsMove, POINT_ID_0);
+    EXPECT_TRUE(eventMove != nullptr);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, READY_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_027 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_OnPointerEvent_028
+ * @tc.name: OnPointerEvent
+ * @tc.desc: Test three finger double tap mode - three fingers tap then down and move
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_028, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_028 start";
+    zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 10, 10);
+    MMI::PointerEvent::PointerItem point1 = {};
+    SetPointerItem(point1, POINT_ID_1, 20, 20);
+    MMI::PointerEvent::PointerItem point2 = {};
+    SetPointerItem(point2, POINT_ID_2, 30, 30);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    std::vector<MMI::PointerEvent::PointerItem> points1 = {point0, point1};
+    std::shared_ptr<MMI::PointerEvent> eventDown1 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points1, POINT_ID_1);
+    EXPECT_TRUE(eventDown1 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown1);
+    std::vector<MMI::PointerEvent::PointerItem> points2 = {point0, point1, point2};
+    std::shared_ptr<MMI::PointerEvent> eventDown2 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points2, POINT_ID_2);
+    EXPECT_TRUE(eventDown2 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown2);
+    std::vector<MMI::PointerEvent::PointerItem> pointsUp0 = {point1, point2};
+    std::shared_ptr<MMI::PointerEvent> eventUp0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_UP, pointsUp0, POINT_ID_0);
+    EXPECT_TRUE(eventUp0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventUp0);
+    std::vector<MMI::PointerEvent::PointerItem> pointsDown3 = {point1, point2, point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown3 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, pointsDown3, POINT_ID_0);
+    EXPECT_TRUE(eventDown3 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown3);
+    MMI::PointerEvent::PointerItem itemMove0 = {};
+    itemMove0.SetPointerId(POINT_ID_0);
+    itemMove0.SetDisplayX(15);
+    itemMove0.SetDisplayY(15);
+    MMI::PointerEvent::PointerItem itemMove1 = {};
+    itemMove1.SetPointerId(POINT_ID_1);
+    itemMove1.SetDisplayX(25);
+    itemMove1.SetDisplayY(25);
+    MMI::PointerEvent::PointerItem itemMove2 = {};
+    itemMove2.SetPointerId(POINT_ID_2);
+    itemMove2.SetDisplayX(35);
+    itemMove2.SetDisplayY(35);
+    std::vector<MMI::PointerEvent::PointerItem> pointsMove = {itemMove0, itemMove1, itemMove2};
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_MOVE, pointsMove, POINT_ID_0);
+    EXPECT_TRUE(eventMove != nullptr);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, READY_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_028 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_OnPointerEvent_029
+ * @tc.name: OnPointerEvent
+ * @tc.desc: Test three finger double tap mode zoom state with one finger down
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_029, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_029 start";
+    zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
+    zoomGesture_->StartMagnificationInteract();
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 10, 10);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_029 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_OnPointerEvent_030
+ * @tc.name: OnPointerEvent
+ * @tc.desc: Test three finger double tap mode zoom state with two fingers down
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_030, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_030 start";
+    zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
+    zoomGesture_->StartMagnificationInteract();
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 10, 10);
+    MMI::PointerEvent::PointerItem point1 = {};
+    SetPointerItem(point1, POINT_ID_1, 20, 20);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    std::vector<MMI::PointerEvent::PointerItem> points1 = {point0, point1};
+    std::shared_ptr<MMI::PointerEvent> eventDown1 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points1, POINT_ID_1);
+    EXPECT_TRUE(eventDown1 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown1);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_030 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_OnPointerEvent_031
+ * @tc.name: OnPointerEvent
+ * @tc.desc: Test three finger double tap mode zoom state with three fingers down and move
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_031, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_031 start";
+    zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
+    zoomGesture_->StartMagnificationInteract();
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 10, 10);
+    MMI::PointerEvent::PointerItem point1 = {};
+    SetPointerItem(point1, POINT_ID_1, 20, 20);
+    MMI::PointerEvent::PointerItem point2 = {};
+    SetPointerItem(point2, POINT_ID_2, 30, 30);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    std::vector<MMI::PointerEvent::PointerItem> points1 = {point0, point1};
+    std::shared_ptr<MMI::PointerEvent> eventDown1 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points1, POINT_ID_1);
+    EXPECT_TRUE(eventDown1 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown1);
+    std::vector<MMI::PointerEvent::PointerItem> points2 = {point0, point1, point2};
+    std::shared_ptr<MMI::PointerEvent> eventDown2 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points2, POINT_ID_2);
+    EXPECT_TRUE(eventDown2 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown2);
+    MMI::PointerEvent::PointerItem itemMove0 = {};
+    itemMove0.SetPointerId(POINT_ID_0);
+    itemMove0.SetDisplayX(15);
+    itemMove0.SetDisplayY(15);
+    MMI::PointerEvent::PointerItem itemMove1 = {};
+    itemMove1.SetPointerId(POINT_ID_1);
+    itemMove1.SetDisplayX(25);
+    itemMove1.SetDisplayY(25);
+    MMI::PointerEvent::PointerItem itemMove2 = {};
+    itemMove2.SetPointerId(POINT_ID_2);
+    itemMove2.SetDisplayX(35);
+    itemMove2.SetDisplayY(35);
+    std::vector<MMI::PointerEvent::PointerItem> pointsMove = {itemMove0, itemMove1, itemMove2};
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_MOVE, pointsMove, POINT_ID_0);
+    EXPECT_TRUE(eventMove != nullptr);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_031 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_OnPointerEvent_032
+ * @tc.name: OnPointerEvent
+ * @tc.desc: Test three finger double tap mode zoom state with three fingers tap then down
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_032, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_032 start";
+    zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
+    zoomGesture_->StartMagnificationInteract();
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 10, 10);
+    MMI::PointerEvent::PointerItem point1 = {};
+    SetPointerItem(point1, POINT_ID_1, 20, 20);
+    MMI::PointerEvent::PointerItem point2 = {};
+    SetPointerItem(point2, POINT_ID_2, 30, 30);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    std::vector<MMI::PointerEvent::PointerItem> points1 = {point0, point1};
+    std::shared_ptr<MMI::PointerEvent> eventDown1 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points1, POINT_ID_1);
+    EXPECT_TRUE(eventDown1 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown1);
+    std::vector<MMI::PointerEvent::PointerItem> points2 = {point0, point1, point2};
+    std::shared_ptr<MMI::PointerEvent> eventDown2 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points2, POINT_ID_2);
+    EXPECT_TRUE(eventDown2 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown2);
+    std::vector<MMI::PointerEvent::PointerItem> pointsUp0 = {point1, point2};
+    std::shared_ptr<MMI::PointerEvent> eventUp0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_UP, pointsUp0, POINT_ID_0);
+    EXPECT_TRUE(eventUp0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventUp0);
+    std::vector<MMI::PointerEvent::PointerItem> pointsDown3 = {point1, point2, point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown3 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, pointsDown3, POINT_ID_0);
+    EXPECT_TRUE(eventDown3 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown3);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_032 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_OnPointerEvent_033
+ * @tc.name: OnPointerEvent
+ * @tc.desc: Test three finger double tap mode zoom state sliding with two fingers
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_033, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_033 start";
+    zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
+    zoomGesture_->StartMagnificationInteract();
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 10, 10);
+    MMI::PointerEvent::PointerItem point1 = {};
+    SetPointerItem(point1, POINT_ID_1, 200, 200);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    std::vector<MMI::PointerEvent::PointerItem> points1 = {point0, point1};
+    std::shared_ptr<MMI::PointerEvent> eventDown1 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points1, POINT_ID_1);
+    EXPECT_TRUE(eventDown1 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown1);
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_MOVE);
+    EXPECT_TRUE(eventMove != nullptr);
+    MMI::PointerEvent::PointerItem itemMove0;
+    itemMove0.SetPointerId(POINT_ID_0);
+    itemMove0.SetDisplayX(50);
+    itemMove0.SetDisplayY(50);
+    eventMove->AddPointerItem(itemMove0);
+    MMI::PointerEvent::PointerItem itemMove1;
+    itemMove1.SetPointerId(POINT_ID_1);
+    itemMove1.SetDisplayX(250);
+    itemMove1.SetDisplayY(250);
+    eventMove->AddPointerItem(itemMove1);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_033 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_TransferState_001
+ * @tc.name: TransferState
+ * @tc.desc: Test function TransferState to PASSING_THROUGH state
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_TransferState_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_TransferState_001 start";
+    EXPECT_TRUE(zoomGesture_ != nullptr);
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    std::shared_ptr<MMI::PointerEvent> eventDown = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown != nullptr);
+    MMI::PointerEvent::PointerItem item1;
+    item1.SetDisplayX(10);
+    item1.SetDisplayY(20);
+    eventDown->AddPointerItem(item1);
+    MMI::PointerEvent::PointerItem item2;
+    item2.SetDisplayX(40);
+    item2.SetDisplayY(20);
+    eventDown->AddPointerItem(item2);
+    zoomGesture_->OnPointerEvent(*eventDown);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, READY_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_TransferState_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_IsKnuckles_001
+ * @tc.name: IsKnuckles
+ * @tc.desc: Test function IsKnuckles with knuckle tool type
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_IsKnuckles_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_IsKnuckles_001 start";
+    EXPECT_TRUE(zoomGesture_ != nullptr);
+    std::shared_ptr<MMI::PointerEvent> event = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(event != nullptr);
+    MMI::PointerEvent::PointerItem item;
+    item.SetToolType(MMI::PointerEvent::TOOL_TYPE_KNUCKLE);
+    item.SetDisplayX(100);
+    item.SetDisplayY(100);
+    event->AddPointerItem(item);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, READY_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_IsKnuckles_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_CalcFocusCoordinate_001
+ * @tc.name: CalcFocusCoordinate
+ * @tc.desc: Test CalcFocusCoordinate with empty pointer list
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_CalcFocusCoordinate_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_CalcFocusCoordinate_001 start";
+    EXPECT_TRUE(zoomGesture_ != nullptr);
+    std::shared_ptr<MMI::PointerEvent> event = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(event != nullptr);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, READY_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_CalcFocusCoordinate_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_HandleZoomSlidingStateDown_001
+ * @tc.name: HandleZoomSlidingStateDown
+ * @tc.desc: Test HandleZoomSlidingStateDown with three fingers
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_HandleZoomSlidingStateDown_001,
+    TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleZoomSlidingStateDown_001 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    TripleTaps();
+    bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
+    EXPECT_TRUE(zoomState);
+    std::shared_ptr<MMI::PointerEvent> eventDown = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown != nullptr);
+    MMI::PointerEvent::PointerItem item1;
+    item1.SetDisplayX(10);
+    item1.SetDisplayY(20);
+    item1.SetPointerId(POINT_ID_0);
+    eventDown->AddPointerItem(item1);
+    MMI::PointerEvent::PointerItem item2;
+    item2.SetDisplayX(40);
+    item2.SetDisplayY(20);
+    item2.SetPointerId(POINT_ID_1);
+    eventDown->AddPointerItem(item2);
+    zoomGesture_->OnPointerEvent(*eventDown);
+    MMI::PointerEvent::PointerItem item3;
+    item3.SetDisplayX(50);
+    item3.SetDisplayY(25);
+    item3.SetPointerId(POINT_ID_2);
+    eventDown->AddPointerItem(item3);
+    eventDown->SetPointerAction(MMI::PointerEvent::POINTER_ACTION_DOWN);
+    zoomGesture_->OnPointerEvent(*eventDown);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleZoomSlidingStateDown_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_HandleZoomSlidingStateUp_001
+ * @tc.name: HandleZoomSlidingStateUp
+ * @tc.desc: Test HandleZoomSlidingStateUp with one finger remaining
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_HandleZoomSlidingStateUp_001,
+    TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleZoomSlidingStateUp_001 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    TripleTaps();
+    bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
+    EXPECT_TRUE(zoomState);
+    std::shared_ptr<MMI::PointerEvent> eventDown = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown != nullptr);
+    MMI::PointerEvent::PointerItem item1;
+    item1.SetDisplayX(10);
+    item1.SetDisplayY(20);
+    item1.SetPointerId(POINT_ID_0);
+    eventDown->AddPointerItem(item1);
+    MMI::PointerEvent::PointerItem item2;
+    item2.SetDisplayX(40);
+    item2.SetDisplayY(20);
+    item2.SetPointerId(POINT_ID_1);
+    eventDown->AddPointerItem(item2);
+    zoomGesture_->OnPointerEvent(*eventDown);
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_MOVE);
+    EXPECT_TRUE(eventMove != nullptr);
+    MMI::PointerEvent::PointerItem itemMove1;
+    itemMove1.SetDisplayX(50);
+    itemMove1.SetDisplayY(50);
+    itemMove1.SetPointerId(POINT_ID_0);
+    eventMove->AddPointerItem(itemMove1);
+    MMI::PointerEvent::PointerItem itemMove2;
+    itemMove2.SetDisplayX(100);
+    itemMove2.SetDisplayY(100);
+    itemMove2.SetPointerId(POINT_ID_1);
+    eventMove->AddPointerItem(itemMove2);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    std::vector<MMI::PointerEvent::PointerItem> pointsUp = {itemMove2};
+    std::shared_ptr<MMI::PointerEvent> eventUp = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_UP, pointsUp, POINT_ID_0);
+    EXPECT_TRUE(eventUp != nullptr);
+    zoomGesture_->OnPointerEvent(*eventUp);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleZoomSlidingStateUp_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_OnScroll_001
+ * @tc.name: OnScroll
+ * @tc.desc: Test OnScroll with full screen magnification
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnScroll_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnScroll_001 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    zoomGesture_->SetMagnificationMode(FULL_SCREEN_MAGNIFICATION);
+    TripleTaps();
+    bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
+    EXPECT_TRUE(zoomState);
+    std::shared_ptr<MMI::PointerEvent> eventDown = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown != nullptr);
+    MMI::PointerEvent::PointerItem item1;
+    item1.SetDisplayX(10);
+    item1.SetDisplayY(20);
+    item1.SetPointerId(POINT_ID_0);
+    eventDown->AddPointerItem(item1);
+    MMI::PointerEvent::PointerItem item2;
+    item2.SetDisplayX(40);
+    item2.SetDisplayY(20);
+    item2.SetPointerId(POINT_ID_1);
+    eventDown->AddPointerItem(item2);
+    zoomGesture_->OnPointerEvent(*eventDown);
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_MOVE);
+    EXPECT_TRUE(eventMove != nullptr);
+    MMI::PointerEvent::PointerItem itemMove1;
+    itemMove1.SetDisplayX(100);
+    itemMove1.SetDisplayY(100);
+    itemMove1.SetPointerId(POINT_ID_0);
+    eventMove->AddPointerItem(itemMove1);
+    MMI::PointerEvent::PointerItem itemMove2;
+    itemMove2.SetDisplayX(150);
+    itemMove2.SetDisplayY(150);
+    itemMove2.SetPointerId(POINT_ID_1);
+    eventMove->AddPointerItem(itemMove2);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnScroll_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_OnScroll_002
+ * @tc.name: OnScroll
+ * @tc.desc: Test OnScroll with window magnification
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnScroll_002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnScroll_002 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    zoomGesture_->SetMagnificationMode(WINDOW_MAGNIFICATION);
+    TripleTaps();
+    bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
+    EXPECT_TRUE(zoomState);
+    std::shared_ptr<MMI::PointerEvent> eventDown = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown != nullptr);
+    MMI::PointerEvent::PointerItem item1;
+    item1.SetDisplayX(10);
+    item1.SetDisplayY(20);
+    item1.SetPointerId(POINT_ID_0);
+    eventDown->AddPointerItem(item1);
+    MMI::PointerEvent::PointerItem item2;
+    item2.SetDisplayX(40);
+    item2.SetDisplayY(20);
+    item2.SetPointerId(POINT_ID_1);
+    eventDown->AddPointerItem(item2);
+    zoomGesture_->OnPointerEvent(*eventDown);
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_MOVE);
+    EXPECT_TRUE(eventMove != nullptr);
+    MMI::PointerEvent::PointerItem itemMove1;
+    itemMove1.SetDisplayX(100);
+    itemMove1.SetDisplayY(100);
+    itemMove1.SetPointerId(POINT_ID_0);
+    eventMove->AddPointerItem(itemMove1);
+    MMI::PointerEvent::PointerItem itemMove2;
+    itemMove2.SetDisplayX(150);
+    itemMove2.SetDisplayY(150);
+    itemMove2.SetPointerId(POINT_ID_1);
+    eventMove->AddPointerItem(itemMove2);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnScroll_002 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_HandleHoldState_001
+ * @tc.name: HandleHoldState
+ * @tc.desc: Test HandleHoldStateDown/Up/Move in zoom state
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_HandleHoldState_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleHoldState_001 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    TripleTaps();
+    bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
+    EXPECT_TRUE(zoomState);
+    std::shared_ptr<MMI::PointerEvent> eventDown = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown != nullptr);
+    MMI::PointerEvent::PointerItem item;
+    item.SetDisplayX(100);
+    item.SetDisplayY(100);
+    eventDown->AddPointerItem(item);
+    zoomGesture_->OnPointerEvent(*eventDown);
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_MOVE);
+    EXPECT_TRUE(eventMove != nullptr);
+    MMI::PointerEvent::PointerItem itemMove;
+    itemMove.SetDisplayX(110);
+    itemMove.SetDisplayY(110);
+    eventMove->AddPointerItem(itemMove);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    std::shared_ptr<MMI::PointerEvent> eventUp = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_UP);
+    EXPECT_TRUE(eventUp != nullptr);
+    MMI::PointerEvent::PointerItem itemUp;
+    itemUp.SetDisplayX(110);
+    itemUp.SetDisplayY(110);
+    eventUp->AddPointerItem(itemUp);
+    zoomGesture_->OnPointerEvent(*eventUp);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleHoldState_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_HandleHotAreaSliding_001
+ * @tc.name: HandleHotAreaSliding
+ * @tc.desc: Test HandleHotAreaSlidingStateMove and Up
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_HandleHotAreaSliding_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleHotAreaSliding_001 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    zoomGesture_->SetMagnificationMode(WINDOW_MAGNIFICATION);
+    TripleTaps();
+    bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
+    EXPECT_TRUE(zoomState);
+    AccessibilityAbilityHelper::GetInstance().SetTapOnHotArea(true);
+    std::shared_ptr<MMI::PointerEvent> eventDown = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown != nullptr);
+    MMI::PointerEvent::PointerItem item;
+    item.SetDisplayX(10);
+    item.SetDisplayY(20);
+    eventDown->AddPointerItem(item);
+    zoomGesture_->OnPointerEvent(*eventDown);
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_MOVE);
+    EXPECT_TRUE(eventMove != nullptr);
+    MMI::PointerEvent::PointerItem itemMove;
+    itemMove.SetDisplayX(50);
+    itemMove.SetDisplayY(50);
+    eventMove->AddPointerItem(itemMove);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    std::shared_ptr<MMI::PointerEvent> eventUp = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_UP);
+    EXPECT_TRUE(eventUp != nullptr);
+    MMI::PointerEvent::PointerItem itemUp;
+    itemUp.SetDisplayX(50);
+    itemUp.SetDisplayY(50);
+    eventUp->AddPointerItem(itemUp);
+    zoomGesture_->OnPointerEvent(*eventUp);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleHotAreaSliding_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_HandleMenuSliding_001
+ * @tc.name: HandleMenuSliding
+ * @tc.desc: Test HandleMenuSlidingStateMove and Up
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_HandleMenuSliding_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleMenuSliding_001 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    TripleTaps();
+    bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
+    EXPECT_TRUE(zoomState);
+    AccessibilityAbilityHelper::GetInstance().SetTapOnMenu(true);
+    std::shared_ptr<MMI::PointerEvent> eventDown = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown != nullptr);
+    MMI::PointerEvent::PointerItem item;
+    item.SetDisplayX(10);
+    item.SetDisplayY(20);
+    eventDown->AddPointerItem(item);
+    zoomGesture_->OnPointerEvent(*eventDown);
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_MOVE);
+    EXPECT_TRUE(eventMove != nullptr);
+    MMI::PointerEvent::PointerItem itemMove;
+    itemMove.SetDisplayX(50);
+    itemMove.SetDisplayY(50);
+    eventMove->AddPointerItem(itemMove);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    std::shared_ptr<MMI::PointerEvent> eventUp = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_UP);
+    EXPECT_TRUE(eventUp != nullptr);
+    MMI::PointerEvent::PointerItem itemUp;
+    itemUp.SetDisplayX(50);
+    itemUp.SetDisplayY(50);
+    eventUp->AddPointerItem(itemUp);
+    zoomGesture_->OnPointerEvent(*eventUp);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleMenuSliding_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_RecognizeScale_001
+ * @tc.name: RecognizeScale
+ * @tc.desc: Test RecognizeScale with full screen magnification mode
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_RecognizeScale_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_RecognizeScale_001 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    zoomGesture_->SetMagnificationMode(FULL_SCREEN_MAGNIFICATION);
+    TripleTaps();
+    bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
+    EXPECT_TRUE(zoomState);
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 100, 100);
+    MMI::PointerEvent::PointerItem point1 = {};
+    SetPointerItem(point1, POINT_ID_1, 200, 200);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    std::vector<MMI::PointerEvent::PointerItem> points1 = {point0, point1};
+    std::shared_ptr<MMI::PointerEvent> eventDown1 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points1, POINT_ID_1);
+    EXPECT_TRUE(eventDown1 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown1);
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_MOVE);
+    EXPECT_TRUE(eventMove != nullptr);
+    MMI::PointerEvent::PointerItem itemMove0;
+    itemMove0.SetPointerId(POINT_ID_0);
+    itemMove0.SetDisplayX(80);
+    itemMove0.SetDisplayY(80);
+    eventMove->AddPointerItem(itemMove0);
+    MMI::PointerEvent::PointerItem itemMove1;
+    itemMove1.SetPointerId(POINT_ID_1);
+    itemMove1.SetDisplayX(220);
+    itemMove1.SetDisplayY(220);
+    eventMove->AddPointerItem(itemMove1);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_RecognizeScale_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_RecognizeScale_002
+ * @tc.name: RecognizeScale
+ * @tc.desc: Test RecognizeScale with window magnification mode
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_RecognizeScale_002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_RecognizeScale_002 start";
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    zoomGesture_->SetMagnificationMode(WINDOW_MAGNIFICATION);
+    TripleTaps();
+    bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
+    EXPECT_TRUE(zoomState);
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 100, 100);
+    MMI::PointerEvent::PointerItem point1 = {};
+    SetPointerItem(point1, POINT_ID_1, 200, 200);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    std::vector<MMI::PointerEvent::PointerItem> points1 = {point0, point1};
+    std::shared_ptr<MMI::PointerEvent> eventDown1 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points1, POINT_ID_1);
+    EXPECT_TRUE(eventDown1 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown1);
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_MOVE);
+    EXPECT_TRUE(eventMove != nullptr);
+    MMI::PointerEvent::PointerItem itemMove0;
+    itemMove0.SetPointerId(POINT_ID_0);
+    itemMove0.SetDisplayX(80);
+    itemMove0.SetDisplayY(80);
+    eventMove->AddPointerItem(itemMove0);
+    MMI::PointerEvent::PointerItem itemMove1;
+    itemMove1.SetPointerId(POINT_ID_1);
+    itemMove1.SetDisplayX(250);
+    itemMove1.SetDisplayY(250);
+    eventMove->AddPointerItem(itemMove1);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_RecognizeScale_002 end";
+}
+
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_CacheEvents_001
+ * @tc.name: CacheEvents
+ * @tc.desc: Test CacheEvents and SendCacheEventsToNext
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_CacheEvents_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_CacheEvents_001 start";
+    EXPECT_TRUE(zoomGesture_ != nullptr);
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    std::shared_ptr<MMI::PointerEvent> eventDown = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown != nullptr);
+    MMI::PointerEvent::PointerItem item;
+    item.SetDisplayX(100);
+    item.SetDisplayY(100);
+    eventDown->AddPointerItem(item);
+    AccessibilityAbilityHelper::GetInstance().ClearTouchEventActionVector();
+    zoomGesture_->OnPointerEvent(*eventDown);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, READY_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_CacheEvents_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_IsDownValid_001
+ * @tc.name: IsDownValid
+ * @tc.desc: Test IsDownValid with valid distance
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_IsDownValid_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_IsDownValid_001 start";
+    EXPECT_TRUE(zoomGesture_ != nullptr);
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    std::shared_ptr<MMI::PointerEvent> eventDown1 = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown1 != nullptr);
+    MMI::PointerEvent::PointerItem item1;
+    item1.SetDisplayX(100);
+    item1.SetDisplayY(100);
+    eventDown1->AddPointerItem(item1);
+    zoomGesture_->OnPointerEvent(*eventDown1);
+    std::shared_ptr<MMI::PointerEvent> eventUp1 = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_UP);
+    EXPECT_TRUE(eventUp1 != nullptr);
+    MMI::PointerEvent::PointerItem itemUp1;
+    itemUp1.SetDisplayX(100);
+    itemUp1.SetDisplayY(100);
+    eventUp1->AddPointerItem(itemUp1);
+    zoomGesture_->OnPointerEvent(*eventUp1);
+    std::shared_ptr<MMI::PointerEvent> eventDown2 = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown2 != nullptr);
+    MMI::PointerEvent::PointerItem item2;
+    item2.SetDisplayX(105);
+    item2.SetDisplayY(105);
+    eventDown2->AddPointerItem(item2);
+    zoomGesture_->OnPointerEvent(*eventDown2);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, READY_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_IsDownValid_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_IsDownValid_002
+ * @tc.name: IsDownValid
+ * @tc.desc: Test IsDownValid with invalid distance
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_IsDownValid_002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_IsDownValid_002 start";
+    EXPECT_TRUE(zoomGesture_ != nullptr);
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    std::shared_ptr<MMI::PointerEvent> eventDown1 = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown1 != nullptr);
+    MMI::PointerEvent::PointerItem item1;
+    item1.SetDisplayX(100);
+    item1.SetDisplayY(100);
+    eventDown1->AddPointerItem(item1);
+    zoomGesture_->OnPointerEvent(*eventDown1);
+    std::shared_ptr<MMI::PointerEvent> eventUp1 = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_UP);
+    EXPECT_TRUE(eventUp1 != nullptr);
+    MMI::PointerEvent::PointerItem itemUp1;
+    itemUp1.SetDisplayX(100);
+    itemUp1.SetDisplayY(100);
+    eventUp1->AddPointerItem(itemUp1);
+    zoomGesture_->OnPointerEvent(*eventUp1);
+    std::shared_ptr<MMI::PointerEvent> eventDown2 = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown2 != nullptr);
+    MMI::PointerEvent::PointerItem item2;
+    item2.SetDisplayX(500);
+    item2.SetDisplayY(500);
+    eventDown2->AddPointerItem(item2);
+    AccessibilityAbilityHelper::GetInstance().ClearTouchEventActionVector();
+    zoomGesture_->OnPointerEvent(*eventDown2);
+    int32_t touchAction = AccessibilityAbilityHelper::GetInstance().GetTouchEventActionOfTargetIndex(0);
+    EXPECT_EQ(touchAction, MMI::PointerEvent::POINTER_ACTION_DOWN);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_IsDownValid_002 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_IsMoveValid_001
+ * @tc.name: IsMoveValid
+ * @tc.desc: Test IsMoveValid with valid move distance
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_IsMoveValid_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_IsMoveValid_001 start";
+    EXPECT_TRUE(zoomGesture_ != nullptr);
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    std::shared_ptr<MMI::PointerEvent> eventDown = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown != nullptr);
+    MMI::PointerEvent::PointerItem itemDown;
+    itemDown.SetDisplayX(100);
+    itemDown.SetDisplayY(100);
+    eventDown->AddPointerItem(itemDown);
+    zoomGesture_->OnPointerEvent(*eventDown);
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_MOVE);
+    EXPECT_TRUE(eventMove != nullptr);
+    MMI::PointerEvent::PointerItem itemMove;
+    itemMove.SetDisplayX(105);
+    itemMove.SetDisplayY(105);
+    eventMove->AddPointerItem(itemMove);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, READY_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_IsMoveValid_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_OnPointerEvent_INVALID_001
+ * @tc.name: OnPointerEvent
+ * @tc.desc: Test OnPointerEvent in INVALID state
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_OnPointerEvent_INVALID_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_INVALID_001 start";
+    EXPECT_TRUE(zoomGesture_ != nullptr);
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    std::shared_ptr<MMI::PointerEvent> eventDown = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_DOWN);
+    EXPECT_TRUE(eventDown != nullptr);
+    MMI::PointerEvent::PointerItem item1;
+    item1.SetDisplayX(10);
+    item1.SetDisplayY(20);
+    eventDown->AddPointerItem(item1);
+    MMI::PointerEvent::PointerItem item2;
+    item2.SetDisplayX(40);
+    item2.SetDisplayY(20);
+    eventDown->AddPointerItem(item2);
+    MMI::PointerEvent::PointerItem item3;
+    item3.SetDisplayX(50);
+    item3.SetDisplayY(25);
+    eventDown->AddPointerItem(item3);
+    zoomGesture_->OnPointerEvent(*eventDown);
+    std::shared_ptr<MMI::PointerEvent> eventUp = CreatePointerEvent(MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN,
+        MMI::PointerEvent::POINTER_ACTION_UP);
+    EXPECT_TRUE(eventUp != nullptr);
+    MMI::PointerEvent::PointerItem itemUp1;
+    itemUp1.SetDisplayX(50);
+    itemUp1.SetDisplayY(25);
+    eventUp->AddPointerItem(itemUp1);
+    zoomGesture_->OnPointerEvent(*eventUp);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, READY_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_OnPointerEvent_INVALID_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_CalcSeparationDistance_001
+ * @tc.name: CalcSeparationDistance
+ * @tc.desc: Test CalcSeparationDistance with two pointer event
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_CalcSeparationDistance_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_CalcSeparationDistance_001 start";
+    EXPECT_TRUE(zoomGesture_ != nullptr);
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 100, 100);
+    MMI::PointerEvent::PointerItem point1 = {};
+    SetPointerItem(point1, POINT_ID_1, 200, 200);
+    std::vector<MMI::PointerEvent::PointerItem> points = {point0, point1};
+    std::shared_ptr<MMI::PointerEvent> event = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_MOVE, points, POINT_ID_0);
+    EXPECT_TRUE(event != nullptr);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, READY_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_CalcSeparationDistance_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_CalcScaleSpan_001
+ * @tc.name: CalcScaleSpan
+ * @tc.desc: Test CalcScaleSpan with three pointers
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_CalcScaleSpan_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_CalcScaleSpan_001 start";
+    EXPECT_TRUE(zoomGesture_ != nullptr);
+    zoomGesture_->SetGestureMode(SINGLE_FINGER_TRIPLE_TAP_MODE);
+    TripleTaps();
+    bool zoomState = AccessibilityAbilityHelper::GetInstance().GetZoomState();
+    EXPECT_TRUE(zoomState);
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 100, 100);
+    MMI::PointerEvent::PointerItem point1 = {};
+    SetPointerItem(point1, POINT_ID_1, 200, 200);
+    MMI::PointerEvent::PointerItem point2 = {};
+    SetPointerItem(point2, POINT_ID_2, 150, 150);
+    std::vector<MMI::PointerEvent::PointerItem> points = {point0, point1, point2};
+    std::shared_ptr<MMI::PointerEvent> event = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_MOVE, points, POINT_ID_0);
+    EXPECT_TRUE(event != nullptr);
+    zoomGesture_->OnPointerEvent(*event);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_CalcScaleSpan_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_ThreeFingerDoubleTapZoom_001
+ * @tc.name: ThreeFingerDoubleTapZoom
+ * @tc.desc: Test three finger double tap to start zoom with proper sequence
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_ThreeFingerDoubleTapZoom_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_ThreeFingerDoubleTapZoom_001 start";
+    zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 100, 100);
+    MMI::PointerEvent::PointerItem point1 = {};
+    SetPointerItem(point1, POINT_ID_1, 200, 200);
+    MMI::PointerEvent::PointerItem point2 = {};
+    SetPointerItem(point2, POINT_ID_2, 300, 300);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    std::vector<MMI::PointerEvent::PointerItem> points1 = {point0, point1};
+    std::shared_ptr<MMI::PointerEvent> eventDown1 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points1, POINT_ID_1);
+    EXPECT_TRUE(eventDown1 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown1);
+    std::vector<MMI::PointerEvent::PointerItem> points2 = {point0, point1, point2};
+    std::shared_ptr<MMI::PointerEvent> eventDown2 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points2, POINT_ID_2);
+    EXPECT_TRUE(eventDown2 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown2);
+    std::vector<MMI::PointerEvent::PointerItem> pointsUp2 = {point0, point1};
+    std::shared_ptr<MMI::PointerEvent> eventUp2 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_UP, pointsUp2, POINT_ID_2);
+    EXPECT_TRUE(eventUp2 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventUp2);
+    std::vector<MMI::PointerEvent::PointerItem> pointsUp1 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventUp1 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_UP, pointsUp1, POINT_ID_1);
+    EXPECT_TRUE(eventUp1 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventUp1);
+    std::vector<MMI::PointerEvent::PointerItem> pointsUp0 = {};
+    std::shared_ptr<MMI::PointerEvent> eventUp0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_UP, pointsUp0, POINT_ID_0);
+    EXPECT_TRUE(eventUp0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventUp0);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, READY_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_ThreeFingerDoubleTapZoom_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_HandleTDZoomSliding_001
+ * @tc.name: HandleTDZoomSliding
+ * @tc.desc: Test three finger double tap mode zoom state sliding
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_HandleTDZoomSliding_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleTDZoomSliding_001 start";
+    zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
+    zoomGesture_->StartMagnificationInteract();
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 100, 100);
+    MMI::PointerEvent::PointerItem point1 = {};
+    SetPointerItem(point1, POINT_ID_1, 200, 200);
+    MMI::PointerEvent::PointerItem point2 = {};
+    SetPointerItem(point2, POINT_ID_2, 300, 300);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    std::vector<MMI::PointerEvent::PointerItem> points1 = {point0, point1};
+    std::shared_ptr<MMI::PointerEvent> eventDown1 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points1, POINT_ID_1);
+    EXPECT_TRUE(eventDown1 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown1);
+    std::vector<MMI::PointerEvent::PointerItem> points2 = {point0, point1, point2};
+    std::shared_ptr<MMI::PointerEvent> eventDown2 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points2, POINT_ID_2);
+    EXPECT_TRUE(eventDown2 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown2);
+    MMI::PointerEvent::PointerItem itemMove0 = {};
+    itemMove0.SetPointerId(POINT_ID_0);
+    itemMove0.SetDisplayX(150);
+    itemMove0.SetDisplayY(150);
+    MMI::PointerEvent::PointerItem itemMove1 = {};
+    itemMove1.SetPointerId(POINT_ID_1);
+    itemMove1.SetDisplayX(250);
+    itemMove1.SetDisplayY(250);
+    MMI::PointerEvent::PointerItem itemMove2 = {};
+    itemMove2.SetPointerId(POINT_ID_2);
+    itemMove2.SetDisplayX(350);
+    itemMove2.SetDisplayY(350);
+    std::vector<MMI::PointerEvent::PointerItem> pointsMove = {itemMove0, itemMove1, itemMove2};
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_MOVE, pointsMove, POINT_ID_0);
+    EXPECT_TRUE(eventMove != nullptr);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleTDZoomSliding_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_HandleTDZoomHotArea_001
+ * @tc.name: HandleTDZoomHotArea
+ * @tc.desc: Test three finger double tap mode zoom state hot area sliding
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_HandleTDZoomHotArea_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleTDZoomHotArea_001 start";
+    zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
+    zoomGesture_->SetMagnificationMode(WINDOW_MAGNIFICATION);
+    zoomGesture_->StartMagnificationInteract();
+    AccessibilityAbilityHelper::GetInstance().SetTapOnHotArea(true);
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 100, 100);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    MMI::PointerEvent::PointerItem itemMove = {};
+    itemMove.SetPointerId(POINT_ID_0);
+    itemMove.SetDisplayX(150);
+    itemMove.SetDisplayY(150);
+    std::vector<MMI::PointerEvent::PointerItem> pointsMove = {itemMove};
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_MOVE, pointsMove, POINT_ID_0);
+    EXPECT_TRUE(eventMove != nullptr);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    MMI::PointerEvent::PointerItem itemUp = {};
+    itemUp.SetPointerId(POINT_ID_0);
+    itemUp.SetDisplayX(150);
+    itemUp.SetDisplayY(150);
+    std::vector<MMI::PointerEvent::PointerItem> pointsUp = {itemUp};
+    std::shared_ptr<MMI::PointerEvent> eventUp = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_UP, pointsUp, POINT_ID_0);
+    EXPECT_TRUE(eventUp != nullptr);
+    zoomGesture_->OnPointerEvent(*eventUp);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleTDZoomHotArea_001 end";
+}
+
+/**
+ * @tc.number: AccessibilityZoomGesture_Unittest_HandleTDZoomMenu_001
+ * @tc.name: HandleTDZoomMenu
+ * @tc.desc: Test three finger double tap mode zoom state menu sliding
+ */
+HWTEST_F(AccessibilityZoomGestureUnitTest, AccessibilityZoomGesture_Unittest_HandleTDZoomMenu_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleTDZoomMenu_001 start";
+    zoomGesture_->SetGestureMode(THREE_FINGER_DOUBLE_TAP_MODE);
+    zoomGesture_->StartMagnificationInteract();
+    AccessibilityAbilityHelper::GetInstance().SetTapOnMenu(true);
+    MMI::PointerEvent::PointerItem point0 = {};
+    SetPointerItem(point0, POINT_ID_0, 100, 100);
+    std::vector<MMI::PointerEvent::PointerItem> points0 = {point0};
+    std::shared_ptr<MMI::PointerEvent> eventDown0 = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_DOWN, points0, POINT_ID_0);
+    EXPECT_TRUE(eventDown0 != nullptr);
+    zoomGesture_->OnPointerEvent(*eventDown0);
+    MMI::PointerEvent::PointerItem itemMove = {};
+    itemMove.SetPointerId(POINT_ID_0);
+    itemMove.SetDisplayX(150);
+    itemMove.SetDisplayY(150);
+    std::vector<MMI::PointerEvent::PointerItem> pointsMove = {itemMove};
+    std::shared_ptr<MMI::PointerEvent> eventMove = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_MOVE, pointsMove, POINT_ID_0);
+    EXPECT_TRUE(eventMove != nullptr);
+    zoomGesture_->OnPointerEvent(*eventMove);
+    MMI::PointerEvent::PointerItem itemUp = {};
+    itemUp.SetPointerId(POINT_ID_0);
+    itemUp.SetDisplayX(150);
+    itemUp.SetDisplayY(150);
+    std::vector<MMI::PointerEvent::PointerItem> pointsUp = {itemUp};
+    std::shared_ptr<MMI::PointerEvent> eventUp = CreatePointerEvent(
+        MMI::PointerEvent::POINTER_ACTION_UP, pointsUp, POINT_ID_0);
+    EXPECT_TRUE(eventUp != nullptr);
+    zoomGesture_->OnPointerEvent(*eventUp);
+    int32_t state = zoomGesture_->GetZoomState();
+    EXPECT_EQ(state, ZOOM_STATE);
+    GTEST_LOG_(INFO) << "AccessibilityZoomGesture_Unittest_HandleTDZoomMenu_001 end";
+}
+
 } // namespace Accessibility
 } // namespace OHOS
