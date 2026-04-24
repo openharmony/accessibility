@@ -113,8 +113,6 @@ void MagnificationWindow::FlushImplicitTransaction()
         if (rsTransaction != nullptr) {
             rsTransaction->FlushImplicitTransaction();
         }
-    } else {
-        Rosen::RSTransaction::FlushImplicitTransaction();
     }
 }
 
