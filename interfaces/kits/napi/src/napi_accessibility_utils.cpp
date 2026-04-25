@@ -933,7 +933,9 @@ ActionType ConvertStringToAccessibleOperationType(const std::string &type)
         {"spanClick", ActionType::ACCESSIBILITY_ACTION_SPAN_CLICK},
         {"customActions", ActionType::ACCESSIBILITY_ACTION_CUSTOM},
         {"nextHtmlItem", ActionType::ACCESSIBILITY_ACTION_NEXT_HTML_ITEM},
-        {"previousHtmlItem", ActionType::ACCESSIBILITY_ACTION_PREVIOUS_HTML_ITEM}};
+        {"previousHtmlItem", ActionType::ACCESSIBILITY_ACTION_PREVIOUS_HTML_ITEM},
+        {"injectAction", ActionType::ACCESSIBILITY_ACTION_INJECT_ACTION}
+    };
 
     if (accessibleOperationTypeTable.find(type) == accessibleOperationTypeTable.end()) {
         HILOG_WARN("invalid key[%{public}s]", type.c_str());
