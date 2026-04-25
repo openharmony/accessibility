@@ -195,7 +195,7 @@ static napi_value CreateAccessibilityEventType(napi_env env)
 }
 
 static napi_value CreateInjectActionType(napi_env env)
-{   
+{
     napi_value objValue = nullptr;
     napi_create_object(env, &objValue);
     napi_set_named_property(env, objValue, "CLICK",
