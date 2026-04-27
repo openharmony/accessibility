@@ -18,6 +18,7 @@
 #define private public
 #define protected public
 #include "accessible_ability_manager_service.h"
+#include "accessibility_short_key_dialog.h"
 #undef private
 #undef protected
 #include "accessibility_window_manager.h"
@@ -29,6 +30,7 @@ namespace OHOS {
 namespace Accessibility {
 namespace {
     const std::string extendServiceName_ = "libaams_ext.z.so";
+    const char* ZOOM_GESTURE_CONFLICT_DIALOG_OPEN = "accessibility_zoom_gesture_conflict_dialog_open";
 }
 
 ExtendManagerServiceProxy::ExtendManagerServiceProxy()
@@ -40,9 +42,10 @@ ExtendManagerServiceProxy::~ExtendManagerServiceProxy()
     RemoveExtProxy();
 }
 
-static void SendAccessibilityEventToAA(EventType eventType, GestureType gestureId)
+static void SendAccessibilityEventToAA(EventType eventType, GestureType gestureId, uint64_t displayId)
 {
-    Singleton<AccessibleAbilityManagerService>::GetInstance().SendAccessibilityEventToAA(eventType, gestureId);
+    Singleton<AccessibleAbilityManagerService>::GetInstance().SendAccessibilityEventToAA(
+        eventType, gestureId, displayId);
 }
 
 static std::vector<int32_t> DispatchKeyEvent(MMI::KeyEvent &event, uint32_t sequenceNum)
@@ -77,6 +80,7 @@ bool ExtendManagerServiceProxy::LoadExtProxy()
         SetSendPointerEventForHoverCallback();
         SetGetDelayTimeCallback();
         SetGetMagnificationStateCallback();
+        ExtendGetMagnificationTriggerMethodCallback();
         ExtendGetMagnificationModeCallback();
         ExtendGetMagnificationScaleCallback();
         ExtendUpdateInputFilterCallback();
@@ -87,6 +91,9 @@ bool ExtendManagerServiceProxy::LoadExtProxy()
         SetMagnificationScaleCallback();
         ExtendGetAccessibilityWindowsCallback();
         ExtendSubscribeOsAccountCallback();
+        SetCheckDisplayIdCallback();
+        SetNotifyZoomGesutureConflictDialogCallback();
+        SetGetNotifyZoomGestureConflictCallback();
     }
     if (!handle_) {
         HILOG_ERROR("dlopen error: %{public}s", dlerror());
@@ -156,9 +163,10 @@ bool ExtendManagerServiceProxy::SetGetMagnificationStateCallback()
     return true;
 }
 
-static bool FindFocusedElement(AccessibilityElementInfo &elementInfo, uint32_t timeout)
+static bool FindFocusedElement(AccessibilityElementInfo &elementInfo, uint32_t timeout, uint64_t displayId)
 {
-    return Singleton<AccessibleAbilityManagerService>::GetInstance().FindFocusedElement(elementInfo, timeout);
+    int userId = Singleton<AccessibleAbilityManagerService>::GetInstance().GetUserIdByDisplayId(displayId);
+    return Singleton<AccessibleAbilityManagerService>::GetInstance().FindFocusedElement(elementInfo, timeout, userId);
 }
 
 bool ExtendManagerServiceProxy::SetFindFocusedElementCallback()
@@ -167,16 +175,19 @@ bool ExtendManagerServiceProxy::SetFindFocusedElementCallback()
         HILOG_ERROR("Extension Proxy is not load");
         return false;
     }
-    using FindFocusedElementCallback = bool (*)(AccessibilityElementInfo &elementInfo, uint32_t timeout);
+    using FindFocusedElementCallback =
+        bool (*)(AccessibilityElementInfo &elementInfo, uint32_t timeout, uint64_t displayId);
     using SetCallback = void (*)(FindFocusedElementCallback cb);
     SetCallback setCallback = (SetCallback)GetFunc("SetFindFocusedElementCallback");
     setCallback(FindFocusedElement);
     return true;
 }
 
-static bool ExecuteActionOnAccessibilityFocused(const ActionType &action)
+static bool ExecuteActionOnAccessibilityFocused(const ActionType &action, uint64_t displayId)
 {
-    return Singleton<AccessibleAbilityManagerService>::GetInstance().ExecuteActionOnAccessibilityFocused(action);
+    int userId = Singleton<AccessibleAbilityManagerService>::GetInstance().GetUserIdByDisplayId(displayId);
+    return Singleton<AccessibleAbilityManagerService>::GetInstance().ExecuteActionOnAccessibilityFocused(
+        action, userId);
 }
 
 bool ExtendManagerServiceProxy::SetExecuteActionOnAccessibilityFocusedCallback()
@@ -185,16 +196,17 @@ bool ExtendManagerServiceProxy::SetExecuteActionOnAccessibilityFocusedCallback()
         HILOG_ERROR("Extension Proxy is not load");
         return false;
     }
-    using ExecuteActionOnAccessibilityFocusedCallback = bool (*)(const ActionType &action);
+    using ExecuteActionOnAccessibilityFocusedCallback = bool (*)(const ActionType &action, uint64_t displayId);
     using SetCallback = void (*)(ExecuteActionOnAccessibilityFocusedCallback cb);
     SetCallback setCallback = (SetCallback)GetFunc("SetExecuteActionOnAccessibilityFocusedCallback");
     setCallback(ExecuteActionOnAccessibilityFocused);
     return true;
 }
 
-static void GetFocusedWindowId(int32_t &focusedWindowId)
+static void GetFocusedWindowId(int32_t &focusedWindowId, uint64_t displayId)
 {
-    Singleton<AccessibilityWindowManager>::GetInstance().GetFocusedWindowId(focusedWindowId);
+    int userId = Singleton<AccessibleAbilityManagerService>::GetInstance().GetUserIdByDisplayId(displayId);
+    Singleton<AccessibleAbilityManagerService>::GetInstance().InnerGetFocusedWindowId(focusedWindowId, userId);
 }
 
 bool ExtendManagerServiceProxy::SetGetFocusedWindowIdCallback()
@@ -203,16 +215,17 @@ bool ExtendManagerServiceProxy::SetGetFocusedWindowIdCallback()
         HILOG_ERROR("Extension Proxy is not load");
         return false;
     }
-    using GetFocusedWindowIdCallback = void (*)(int32_t &focusedWindowId);
+    using GetFocusedWindowIdCallback = void (*)(int32_t &focusedWindowId, uint64_t displayId);
     using SetCallback = void (*)(GetFocusedWindowIdCallback cb);
     SetCallback setCallback = (SetCallback)GetFunc("SetGetFocusedWindowIdCallback");
     setCallback(GetFocusedWindowId);
     return true;
 }
 
-static void GetActiveWindowId(int32_t &focusedWindowId)
+static void GetActiveWindowId(int32_t &focusedWindowId, uint64_t displayId)
 {
-    focusedWindowId = Singleton<AccessibilityWindowManager>::GetInstance().GetActiveWindowId();
+    int userId = Singleton<AccessibleAbilityManagerService>::GetInstance().GetUserIdByDisplayId(displayId);
+    Singleton<AccessibleAbilityManagerService>::GetInstance().InnerGetActiveWindow(focusedWindowId, userId);
 }
 
 bool ExtendManagerServiceProxy::SetGetActiveWindowIdCallback()
@@ -221,16 +234,18 @@ bool ExtendManagerServiceProxy::SetGetActiveWindowIdCallback()
         HILOG_ERROR("Extension Proxy is not load");
         return false;
     }
-    using GetActiveWindowIdCallback = void (*)(int32_t &activeWindowId);
+    using GetActiveWindowIdCallback = void (*)(int32_t &activeWindowId, uint64_t displayId);
     using SetCallback = void (*)(GetActiveWindowIdCallback cb);
     SetCallback setCallback = (SetCallback)GetFunc("SetGetActiveWindowIdCallback");
     setCallback(GetActiveWindowId);
     return true;
 }
 
-static bool GetAccessibilityWindow(int32_t windowId, AccessibilityWindowInfo &window)
+static bool GetAccessibilityWindow(int32_t windowId, AccessibilityWindowInfo &window, uint64_t displayId)
 {
-    return Singleton<AccessibilityWindowManager>::GetInstance().GetAccessibilityWindow(windowId, window);
+    int userId = Singleton<AccessibleAbilityManagerService>::GetInstance().GetUserIdByDisplayId(displayId);
+    return Singleton<AccessibleAbilityManagerService>::GetInstance().InnerGetAccessibilityWindow(
+        windowId, window, userId);
 }
 
 bool ExtendManagerServiceProxy::SetGetAccessibilityWindowCallback()
@@ -239,16 +254,22 @@ bool ExtendManagerServiceProxy::SetGetAccessibilityWindowCallback()
         HILOG_ERROR("Extension Proxy is not load");
         return false;
     }
-    using GetAccessibilityWindowCallback = bool (*)(int32_t windowId, AccessibilityWindowInfo &window);
+    using GetAccessibilityWindowCallback =
+        bool (*)(int32_t windowId, AccessibilityWindowInfo &window, uint64_t displayId);
     using SetCallback = void (*)(GetAccessibilityWindowCallback cb);
     SetCallback setCallback = (SetCallback)GetFunc("SetGetAccessibilityWindowCallback");
     setCallback(GetAccessibilityWindow);
     return true;
 }
 
-static void SendPointerEventForHover(const std::shared_ptr<MMI::PointerEvent>& pointerEvent)
+static void SendPointerEventForHover(const std::shared_ptr<MMI::PointerEvent>& pointerEvent, uint64_t displayId)
 {
-    Singleton<AccessibilityWindowManager>::GetInstance().SendPointerEventForHover(pointerEvent);
+    int userId = Singleton<AccessibleAbilityManagerService>::GetInstance().GetUserIdByDisplayId(displayId);
+    sptr<AccessibilityAccountData> accountData =
+        Singleton<AccessibleAbilityManagerService>::GetInstance().GetAccountData(userId);
+    if (accountData) {
+        accountData->GetWindowManager().SendPointerEventForHover(pointerEvent);
+    }
 }
 
 bool ExtendManagerServiceProxy::SetSendPointerEventForHoverCallback()
@@ -257,10 +278,98 @@ bool ExtendManagerServiceProxy::SetSendPointerEventForHoverCallback()
         HILOG_ERROR("Extension Proxy is not load");
         return false;
     }
-    using SendPointerEventForHoverCallback = void (*)(const std::shared_ptr<MMI::PointerEvent>& pointerEvent);
+    using SendPointerEventForHoverCallback =
+        void (*)(const std::shared_ptr<MMI::PointerEvent> &pointerEvent, uint64_t displayId);
     using SetCallback = void (*)(SendPointerEventForHoverCallback cb);
     SetCallback setCallback = (SetCallback)GetFunc("SetSendPointerEventForHoverCallback");
     setCallback(SendPointerEventForHover);
+    return true;
+}
+
+static bool CheckDisplayId(uint64_t displayId)
+{
+    int userId = Singleton<AccessibleAbilityManagerService>::GetInstance().GetUserIdByDisplayId(displayId);
+    sptr<AccessibilityAccountData> accountData =
+        Singleton<AccessibleAbilityManagerService>::GetInstance().GetAccountData(userId);
+    if (accountData) {
+        return accountData != 0;
+    }
+    return false;
+}
+ 
+bool ExtendManagerServiceProxy::SetCheckDisplayIdCallback()
+{
+    if (!handle_) {
+        HILOG_ERROR("Extension Proxy is not load");
+        return false;
+    }
+    using CheckDisplayIdCallback = bool (*)(uint64_t displayId);
+    using SetCallback = void (*)(CheckDisplayIdCallback cb);
+    SetCallback setCallback = (SetCallback)GetFunc("SetCheckDisplayIdCallback");
+    setCallback(CheckDisplayId);
+    return true;
+}
+
+static bool NotifyZoomGesutureConflictDialog()
+{
+    std::shared_ptr<AccessibilityShortkeyDialog> shortkeyDialog = std::make_shared<AccessibilityShortkeyDialog>();
+    if (!shortkeyDialog) {
+        HILOG_DEBUG("shortDialog is null");
+        return false;
+    }
+    if (!shortkeyDialog->ConnectDialog(ShortKeyDialogType::ZOOM_GESTURE_CONFLICT)) {
+        HILOG_ERROR("connect dialog zoom gesture conflict failed");
+        return false;
+    }
+    auto account = Singleton<AccessibleAbilityManagerService>::GetInstance().GetCurrentAccountData();
+    if (!account) {
+        HILOG_DEBUG("account is null");
+        return false;
+    }
+    auto config = account->GetConfig();
+    if (!config) {
+        HILOG_DEBUG("config is null");
+        return false;
+    }
+    auto dbHandler = config->GetDbHandle();
+    if (!dbHandler) {
+        HILOG_DEBUG("dbHandler is null");
+        return false;
+    }
+    dbHandler->PutBoolValue(ZOOM_GESTURE_CONFLICT_DIALOG_OPEN, true);
+    return true;
+}
+
+bool ExtendManagerServiceProxy::SetNotifyZoomGesutureConflictDialogCallback()
+{
+    if (!handle_) {
+        HILOG_ERROR("Extension Proxy is not load");
+        return false;
+    }
+    using NotifyZoomGesutureConflictDialogCallback = bool (*)();
+    using SetCallback = void (*)(NotifyZoomGesutureConflictDialogCallback cb);
+    SetCallback setCallback = (SetCallback)GetFunc("SetNotifyZoomGesutureConflictDialogCallback");
+    setCallback(NotifyZoomGesutureConflictDialog);
+    return true;
+}
+
+static bool GetNotifyZoomGestureConflict()
+{
+    HILOG_DEBUG();
+    return Singleton<AccessibleAbilityManagerService>::GetInstance()
+        .GetCurrentAccountData()->GetConfig()->GetDbHandle()->GetBoolValue(ZOOM_GESTURE_CONFLICT_DIALOG_OPEN, false);
+}
+ 
+bool ExtendManagerServiceProxy::SetGetNotifyZoomGestureConflictCallback()
+{
+    if (!handle_) {
+        HILOG_ERROR("Extension Proxy is not load");
+        return false;
+    }
+    using GetNotifyZoomGestureConflictCallback = bool (*)();
+    using SetCallback = void (*)(GetNotifyZoomGestureConflictCallback cb);
+    SetCallback setCallback = (SetCallback)GetFunc("SetGetNotifyZoomGestureConflictCallback");
+    setCallback(GetNotifyZoomGestureConflict);
     return true;
 }
 
@@ -286,7 +395,7 @@ bool ExtendManagerServiceProxy::SetSendAccessibilityEventToAACallback()
         HILOG_ERROR("Extension Proxy is not load");
         return false;
     }
-    using SendAccessibilityEventToAACallback = void (*)(EventType eventType, GestureType gestureId);
+    using SendAccessibilityEventToAACallback = void (*)(EventType eventType, GestureType gestureId, uint64_t displayId);
     using SetCallback = void (*)(SendAccessibilityEventToAACallback cb);
     SetCallback setCallback = (SetCallback)GetFunc("SetSendAccessibilityEventToAACallback");
     setCallback(SendAccessibilityEventToAA);
@@ -727,6 +836,27 @@ void ExtendManagerServiceProxy::TransitionAnimationsDestroyTimers()
     return func();
 }
 
+void ExtendManagerServiceProxy::OnScreenMagnificationTriggerMethodChanged(int32_t screenMagnificationTriggerMethod)
+{
+    using OnScreenMagnificationTriggerMethodChanged = void(*)(int32_t screenMagnificationTriggerMethod);
+    static OnScreenMagnificationTriggerMethodChanged func;
+    if (!handle_) {
+        HILOG_ERROR("handle is null");
+        return;
+    }
+    if (!func || readyFunc_.find(ExtMethod::ON_SCREEN_MAGNIFICATION_TRIGGER_METHOD_CHANGE) == readyFunc_.end()) {
+        func = (OnScreenMagnificationTriggerMethodChanged)GetFunc("OnScreenMagnificationTriggerMethodChanged");
+        if (func) {
+            readyFunc_.insert(ExtMethod::ON_SCREEN_MAGNIFICATION_TRIGGER_METHOD_CHANGE);
+            return func(screenMagnificationTriggerMethod);
+        } else {
+            HILOG_ERROR("get OnScreenMagnificationTriggerMethodChanged func failed");
+            return;
+        }
+    }
+    return func(screenMagnificationTriggerMethod);
+}
+
 void ExtendManagerServiceProxy::OnScreenMagnificationTypeChanged(uint32_t screenMagnificationType)
 {
     using OnScreenMagnificationTypeChanged = void(*)(uint32_t screenMagnificationType);
@@ -820,6 +950,24 @@ bool ExtendManagerServiceProxy::CheckExtProxyStatus()
         HILOG_ERROR("Extension Proxy is not load");
         return false;
     }
+    return true;
+}
+
+static int32_t GetMagnificationTriggerMethodCallback()
+{
+    return Singleton<AccessibleAbilityManagerService>::GetInstance().GetMagnificationTriggerMethod();
+}
+ 
+bool ExtendManagerServiceProxy::ExtendGetMagnificationTriggerMethodCallback()
+{
+    using GetMagnificationTriggerMethod = int32_t(*)();
+    using SetCallback = void(*)(GetMagnificationTriggerMethod cb);
+    SetCallback setCallbackFun = (SetCallback)GetFunc("ExtendGetMagnificationTriggerMethodCallback");
+    if (!setCallbackFun) {
+        HILOG_ERROR("setCallbackFun is null");
+        return false;
+    }
+    setCallbackFun(GetMagnificationTriggerMethodCallback);
     return true;
 }
 
@@ -972,14 +1120,15 @@ bool ExtendManagerServiceProxy::SetMagnificationScaleCallback()
     return true;
 }
 
-static std::vector<AccessibilityWindowInfo> GetAccessibilityWindowsCallback()
+static std::vector<AccessibilityWindowInfo> GetAccessibilityWindowsCallback(uint64_t displayId)
 {
-    return Singleton<AccessibilityWindowManager>::GetInstance().GetAccessibilityWindows();
+    int userId = Singleton<AccessibleAbilityManagerService>::GetInstance().GetUserIdByDisplayId(displayId);
+    return Singleton<AccessibleAbilityManagerService>::GetInstance().GetAccessibilityWindows(userId);
 }
 
 bool ExtendManagerServiceProxy::ExtendGetAccessibilityWindowsCallback()
 {
-    using GetAccessibilityWindows = std::vector<AccessibilityWindowInfo>(*)();
+    using GetAccessibilityWindows = std::vector<AccessibilityWindowInfo>(*)(uint64_t displayId);
     using SetCallback = void(*)(GetAccessibilityWindows cb);
     SetCallback setCallbackFun = (SetCallback)GetFunc("ExtendGetAccessibilityWindowsCallback");
     if (!setCallbackFun) {

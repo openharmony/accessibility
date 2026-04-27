@@ -19,6 +19,7 @@
 #include <sstream>
 #include <vector>
 #include <charconv>
+
 #include "hilog_wrapper.h"
 #include "ani_utils.h"
 #include <ani_signature_builder.h>
@@ -26,7 +27,7 @@
 using namespace OHOS::Accessibility;
 using namespace arkts::ani_signature;
 
-constexpr const char* CLASSNAME_DOUBLE = "std:core.Double";
+constexpr const char* CLASSNAME_DOUBLE = "std.core.Double";
 const std::string HALF_VALUE = "0";
 const std::string FULL_VALUE = "1";
 
@@ -324,7 +325,9 @@ ActionType ANIUtils::ConvertStringToAccessibleOperationType(const std::string &t
         {"recentTask", ActionType::ACCESSIBILITY_ACTION_RECENTTASK},
         {"notificationCenter", ActionType::ACCESSIBILITY_ACTION_NOTIFICATIONCENTER},
         {"controlCenter", ActionType::ACCESSIBILITY_ACTION_CONTROLCENTER},
-        {"customActions", ActionType::ACCESSIBILITY_ACTION_CUSTOM}};
+        {"injectAction", ActionType::ACCESSIBILITY_ACTION_INJECT_ACTION},
+        {"customActions", ActionType::ACCESSIBILITY_ACTION_CUSTOM}
+    };
 
     if (accessibleOperationTypeTable.find(type) == accessibleOperationTypeTable.end()) {
         HILOG_WARN("invalid key[%{public}s]", type.c_str());
@@ -423,7 +426,7 @@ NAccessibilityErrMsg ANIUtils::QueryRetMsg(RetError errorCode)
 
 void ANIUtils::ThrowBusinessError(ani_env *env, NAccessibilityErrMsg errMsg)
 {
-    Type errorClass = Builder::BuildClass("@ohos:base.BusinessError");
+    Type errorClass = Builder::BuildClass("@ohos.base.BusinessError");
     ani_class cls {};
     if (env->FindClass(errorClass.Descriptor().c_str(), &cls) != ANI_OK) {
         HILOG_ERROR("find class BusinessError failed");
@@ -471,7 +474,7 @@ ani_string ANIUtils::CreateAniString(ani_env *env, const std::string &str)
 
 ani_object ANIUtils::CreateBoolObject(ani_env *env, ani_boolean value)
 {
-    Type boolClass = Builder::BuildClass("std:core.Boolean");
+    Type boolClass = Builder::BuildClass("std.core.Boolean");
     ani_class cls {};
     if (env->FindClass(boolClass.Descriptor().c_str(), &cls) != ANI_OK) {
         HILOG_ERROR("find class Boolean failed");
@@ -660,7 +663,7 @@ void ANIUtils::ConvertEventInfoRefFields(ani_env *env, ani_object eventObject,
     eventInfo.SetResourceId(id);
     eventInfo.SetResourceBundleName(bundleName);
     eventInfo.SetResourceModuleName(moduleName);
-    HILOG_DEBUG("resourceId is %{public}lld, bundleName is %{public}s, moduleName is %{public}s",
+    HILOG_DEBUG("resourceId is %{public}" PRId64 ", bundleName is %{public}s, moduleName is %{public}s",
         id, bundleName.c_str(), moduleName.c_str());
 }
 
@@ -799,7 +802,7 @@ bool ANIUtils::GetColorMember(ani_env *env, ani_object object, const char* name,
         return false;
     }
     ani_class stringClass;
-    env->FindClass("std:core.String", &stringClass);
+    env->FindClass("std.core.String", &stringClass);
     ani_boolean isString;
     env->Object_InstanceOf(static_cast<ani_object>(ref), stringClass, &isString);
     if (isString) {
@@ -847,7 +850,7 @@ bool ANIUtils::GetNumberMember(ani_env *env, ani_object options, const std::stri
 
 bool ANIUtils::SetNumberMember(ani_env *env, ani_object obj, const std::string &name, const ani_int value)
 {
-    static const char *className = "std:core.Int";
+    static const char *className = "std.core.Int";
     ani_class cls;
     if (env->FindClass(className, &cls) != ANI_OK) {
         HILOG_ERROR("Find class '%{public}s' failed", className);
@@ -903,7 +906,7 @@ ani_status ANIUtils::CreateAniBoolean(ani_env* env, bool value, ani_object& resu
 {
     ani_status state;
     ani_class booleanClass;
-    if ((state = env->FindClass("std:core.Boolean", &booleanClass)) != ANI_OK) {
+    if ((state = env->FindClass("std.core.Boolean", &booleanClass)) != ANI_OK) {
         HILOG_ERROR("FindClass std/core/Boolean failed, %{public}d", state);
         return state;
     }
@@ -924,7 +927,7 @@ ani_status ANIUtils::CreateAniInt(ani_env* env, int32_t value, ani_object& resul
 {
     ani_status state;
     ani_class intClass;
-    if ((state = env->FindClass("std:core.Int", &intClass)) != ANI_OK) {
+    if ((state = env->FindClass("std.core.Int", &intClass)) != ANI_OK) {
         HILOG_ERROR("FindClass std/core/Int failed, %{public}d", state);
         return state;
     }
@@ -944,7 +947,7 @@ ani_status ANIUtils::CreateAniFloat(ani_env* env, float value, ani_object& resul
 {
     ani_status state;
     ani_class floatClass;
-    if ((state = env->FindClass("std:core.Float", &floatClass)) != ANI_OK) {
+    if ((state = env->FindClass("std.core.Float", &floatClass)) != ANI_OK) {
         HILOG_ERROR("FindClass std/core/Float failed, %{public}d", state);
         return state;
     }
@@ -964,7 +967,7 @@ ani_status ANIUtils::CreateAniLong(ani_env* env, int64_t value, ani_object& resu
 {
     ani_status state;
     ani_class longClass;
-    if ((state = env->FindClass("std:core.Long", &longClass)) != ANI_OK) {
+    if ((state = env->FindClass("std.core.Long", &longClass)) != ANI_OK) {
         HILOG_ERROR("FindClass std/core/Long failed, %{public}d", state);
         return state;
     }
@@ -1338,6 +1341,18 @@ void ANIUtils::ConvertActionArgsJSToANI(ani_env *env, ani_object obj,
                 args.insert(std::pair<std::string, std::string>("customActions", str.c_str()));
             }
             break;
+        case ActionType::ACCESSIBILITY_ACTION_INJECT_ACTION: {
+            if (env->Object_GetFieldByName_Ref(obj, "injectActionType", &fiedNameValue) == ANI_OK) {
+                int32_t injectActionType = 0;
+                if (env->EnumItem_GetValue_Int(static_cast<ani_enum_item>(fiedNameValue),
+                    &injectActionType) != ANI_OK) {
+                    HILOG_ERROR("Failed to get injectActionType enum value");
+                    break;
+                }
+                args.insert(std::pair<std::string, std::string>("injectActionType", std::to_string(injectActionType)));
+            }
+            break;
+        }
         case ActionType::ACCESSIBILITY_ACTION_SCROLL_FORWARD:
         case ActionType::ACCESSIBILITY_ACTION_SCROLL_BACKWARD:
             SetScrollTypeParam(env, obj, args);

@@ -25,38 +25,6 @@
 #include "napi/native_node_api.h"
 
 EXTERN_C_START
-static void Cleanup(void *data)
-{
-    HILOG_INFO("cleanup hook");
-    if (NAccessibilityClient::accessibilityStateListeners_) {
-        NAccessibilityClient::accessibilityStateListeners_->UnsubscribeFromFramework();
-    }
-    if (NAccessibilityClient::touchGuideStateListeners_) {
-        NAccessibilityClient::touchGuideStateListeners_->UnsubscribeFromFramework();
-    }
-    if (NAccessibilityClient::screenReaderStateListeners_) {
-        NAccessibilityClient::screenReaderStateListeners_->UnsubscribeFromFramework();
-    }
-    if (NAccessibilityClient::touchModeListeners_) {
-        NAccessibilityClient::touchModeListeners_->UnsubscribeFromFramework();
-    }
-    if (NAccessibilityClient::captionListeners_) {
-        NAccessibilityClient::captionListeners_->UnsubscribeFromFramework();
-    }
-    if (NAccessibilityClient::audioMonoStateListeners_) {
-        NAccessibilityClient::audioMonoStateListeners_->UnsubscribeFromFramework();
-    }
-    if (NAccessibilityClient::animationOffStateListeners_) {
-        NAccessibilityClient::animationOffStateListeners_->UnsubscribeFromFramework();
-    }
-    if (NAccessibilityClient::flashReminderSwitchStateListeners_) {
-        NAccessibilityClient::flashReminderSwitchStateListeners_->UnsubscribeFromFramework();
-    }
-    if (NAccessibilityClient::seniorModeStateListeners_) {
-        NAccessibilityClient::seniorModeStateListeners_->UnsubscribeFromFramework();
-    }
-}
-
 static napi_value CreateIntObject(napi_env env, int32_t value)
 {
     napi_value jsObject = nullptr;
@@ -226,6 +194,19 @@ static napi_value CreateAccessibilityEventType(napi_env env)
     return objValue;
 }
 
+static napi_value CreateInjectActionType(napi_env env)
+{
+    napi_value objValue = nullptr;
+    napi_create_object(env, &objValue);
+    napi_set_named_property(env, objValue, "CLICK",
+        CreateIntObject(env, InjectActionType::INJECT_ACTION_TYPE_CLICK));
+    napi_set_named_property(env, objValue, "DOUBLE_CLICK",
+        CreateIntObject(env, InjectActionType::INJECT_ACTION_TYPE_DOUBLE_CLICK));
+    napi_set_named_property(env, objValue, "LONG_CLICK",
+        CreateIntObject(env, InjectActionType::INJECT_ACTION_TYPE_LONG_CLICK));
+    return objValue;
+}
+
 static napi_value CreateAccessibilityAction(napi_env env)
 {
     napi_value objValue = nullptr;
@@ -258,6 +239,7 @@ static napi_value CreateAccessibilityAction(napi_env env)
     napi_set_named_property(env, objValue, "CONTROL_CENTER",
         CreateIntObject(env, AccessibilityAction::CONTROL_CENTER));
     napi_set_named_property(env, objValue, "SPAN_CLICK", CreateIntObject(env, AccessibilityAction::SPAN_CLICK));
+    napi_set_named_property(env, objValue, "INJECT_ACTION", CreateIntObject(env, AccessibilityAction::INJECT_ACTION));
     return objValue;
 }
 
@@ -303,6 +285,7 @@ static napi_value Init(napi_env env, napi_value exports)
 
     napi_set_named_property(env, exports, "AccessibilityEventType", CreateAccessibilityEventType(env));
     napi_set_named_property(env, exports, "AccessibilityAction", CreateAccessibilityAction(env));
+    napi_set_named_property(env, exports, "InjectActionType", CreateInjectActionType(env));
 
     auto &instance = OHOS::AccessibilityConfig::AccessibilityConfig::GetInstance();
     (void)instance.InitializeContext();
@@ -318,10 +301,7 @@ static napi_value Init(napi_env env, napi_value exports)
     NAccessibilityClient::animationOffStateListeners_->SubscribeToFramework();
     NAccessibilityClient::flashReminderSwitchStateListeners_->SubscribeToFramework();
     NAccessibilityClient::seniorModeStateListeners_->SubscribeToFramework();
-    napi_status status = napi_add_env_cleanup_hook(env, Cleanup, &NAccessibilityClient::accessibilityStateListeners_);
-    if (status != napi_ok) {
-        HILOG_WARN("add cleanup hook failed %{public}d", status);
-    }
+
     HILOG_INFO("-----Init end------");
     return exports;
 }

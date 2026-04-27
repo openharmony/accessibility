@@ -53,6 +53,7 @@ enum class ExtMethod : int32_t {
     GET_CLICK_POSITION,
     FOLLOW_FOCUSE_ELEMENT,
     ON_SCREEN_MAGNIFICATION_TYPE_CHANGED,
+    ON_SCREEN_MAGNIFICATION_TRIGGER_METHOD_CHANGE,
     ON_SCREEN_MAGNIFICATION_STATE_CHANGED,
     OFF_ZOOM_GESTURE,
     SET_MAGNIFICATION_STATE,
@@ -86,6 +87,7 @@ public:
     void TransitionAnimationsCancelNotification();
     int32_t TransitionAnimationsRegisterTimers(uint64_t beginTime);
     void TransitionAnimationsDestroyTimers();
+    void OnScreenMagnificationTriggerMethodChanged(int32_t screenMagnificationTriggerMethod);
     void OnScreenMagnificationTypeChanged(uint32_t screenMagnificationType);
     void OnScreenMagnificationStateChanged();
     void UnregisterDisplayListener();
@@ -107,6 +109,7 @@ public:
     bool SetSendPointerEventForHoverCallback();
     bool SetGetDelayTimeCallback();
     bool SetGetMagnificationStateCallback();
+    bool ExtendGetMagnificationTriggerMethodCallback();
     bool ExtendGetMagnificationModeCallback();
     bool ExtendGetMagnificationScaleCallback();
     bool ExtendUpdateInputFilterCallback();

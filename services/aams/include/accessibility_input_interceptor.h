@@ -91,8 +91,14 @@ public:
     void StartMagnificationInteract(uint32_t mode);
     void EnableGesture(uint32_t mode);
     void DisableGesture(uint32_t mode);
+    void SetMagnificationMode(uint32_t mode);
+    void SetMagnificationTriggerMethod(int32_t screenMagnificationTriggerMethod);
     void InitInputManagerHandler();
     void SetServiceOnKeyEventResult(int32_t connectionId, bool isHandled, uint32_t sequenceNum);
+    inline bool IsTouchExplorationEnabled()
+    {
+        return availableFunctions_ & FEATURE_TOUCH_EXPLORATION;
+    }
 
     inline std::shared_ptr<AppExecFwk::EventRunner> &GetInputManagerRunner()
     {
@@ -112,8 +118,7 @@ private:
     void UpdateInterceptor();
     void DestroyInterceptor();
     void CreateMagnificationGesture(sptr<EventTransmission> &header, sptr<EventTransmission> &current);
-    void CreatZoomGesture();
-    void CreatWindowMagnificationGesture();
+    void CreateZoomGesture();
     void ClearMagnificationGesture();
 
     sptr<EventTransmission> pointerEventTransmitters_ = nullptr;
@@ -129,7 +134,6 @@ private:
     ffrt::mutex eventHandlerMutex_;
 
     sptr<AccessibilityZoomGesture> zoomGesture_ = nullptr;
-    sptr<WindowMagnificationGesture> windowMagnificationGesture_ = nullptr;
     bool needInteractMagnification_ = false;
     sptr<KeyEventFilter> keyEventFilter_ = nullptr;
 };

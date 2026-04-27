@@ -64,6 +64,7 @@ void MagnificationWindow::CreateMagnificationWindow()
     windowOption->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FLOATING);
     windowOption->SetWindowRect(windowRect_);
     windowOption->SetFocusable(false);
+    windowOption->SetTouchable(false);
     window_ = OHOS::Rosen::Window::Create(WINDOW_NAME, windowOption);
     if (window_ == nullptr) {
         HILOG_ERROR("window create failed.");
@@ -112,8 +113,6 @@ void MagnificationWindow::FlushImplicitTransaction()
         if (rsTransaction != nullptr) {
             rsTransaction->FlushImplicitTransaction();
         }
-    } else {
-        Rosen::RSTransaction::FlushImplicitTransaction();
     }
 }
 
@@ -315,7 +314,7 @@ void MagnificationWindow::DisableMagnificationFull(bool needClear)
     isMagnificationShowFull_ = false;
 }
 
-void MagnificationWindow::SetScaleFull(float scaleSpan)
+void MagnificationWindow::SetScaleFull(float ratio)
 {
     HILOG_DEBUG();
     if (window_ == nullptr) {
@@ -326,9 +325,7 @@ void MagnificationWindow::SetScaleFull(float scaleSpan)
         HILOG_ERROR("screen param invalid.");
         return;
     }
-    
-    float ratio = scaleSpan / screenSpan_;
-    float tmpScale = scale_ + ratio * scale_;
+    float tmpScale = ratio * scale_;
 
     if (tmpScale > MAX_SCALE) {
         tmpScale = MAX_SCALE;
@@ -821,14 +818,14 @@ void MagnificationWindow::DisableMagnification(uint32_t magnificationType, bool 
     HILOG_DEBUG("invalid type = %{public}d", magnificationType);
 }
 
-void MagnificationWindow::SetScale(uint32_t magnificationType, float scaleSpan)
+void MagnificationWindow::SetScale(uint32_t magnificationType, float ratio)
 {
     if (magnificationType == FULL_SCREEN_MAGNIFICATION) {
-        SetScaleFull(scaleSpan);
+        SetScaleFull(ratio);
         return;
     }
     if (magnificationType == WINDOW_MAGNIFICATION) {
-        SetScalePart(scaleSpan);
+        SetScalePart(ratio);
         return;
     }
     HILOG_DEBUG("invalid type = %{public}d", magnificationType);

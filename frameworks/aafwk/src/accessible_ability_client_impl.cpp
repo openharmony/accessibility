@@ -45,6 +45,10 @@ namespace {
     ffrt::mutex g_Mutex;
     sptr<AccessibleAbilityClientImpl> g_Instance = nullptr;
     constexpr int32_t SA_CONNECT_TIMEOUT = 6 * 1000; // ms
+    constexpr int32_t SCENE_BOARD_WINDOW_ID = 1; // default scene board window id 1
+    constexpr int32_t INVALID_SCENE_BOARD_INNER_WINDOW_ID = -1; // invalid scene board window id -1
+    constexpr int64_t INVALID_SCENE_BOARD_ELEMENT_ID = -1; // invalid scene board element id -1
+    constexpr int32_t MAX_CACHE_WINDOW_SIZE = 5;
 } // namespace
 
 sptr<AccessibleAbilityClient> AccessibleAbilityClient::GetInstance()
@@ -309,6 +313,9 @@ void AccessibleAbilityClientImpl::Init(const sptr<IAccessibleAbilityChannel> &ch
     }
 
     isConnected_ = true;
+#ifndef ACCESSIBILITY_WATCH_FEATURE
+    std::this_thread::sleep_for(std::chrono::milliseconds(WAIT_WINDOW_REGIST));
+#endif // ACCESSIBILITY_WATCH_FEATURE
     if (listener) {
         listener->OnAbilityConnected();
     }
@@ -1150,9 +1157,10 @@ RetError AccessibleAbilityClientImpl::ExecuteAction(const AccessibilityElementIn
         windowId = elementInfo.GetWindowId();
     }
     int64_t elementId = elementInfo.GetAccessibilityId();
+    const Rect rect = elementInfo.GetRectInScreen();
     HILOG_DEBUG("windowId[%{public}d], elementId[%{public}" PRId64 "], action[%{public}d", windowId, elementId, action);
     Accessibility::RetError ret = channelClient_->ExecuteAction(windowId, elementId, action,
-        const_cast<std::map<std::string, std::string> &>(actionArguments));
+        const_cast<std::map<std::string, std::string> &>(actionArguments), rect);
 #ifdef ACCESSIBILITY_EMULATOR_DEFINED
     reporter.setResult(ret);
 #endif // ACCESSIBILITY_EMULATOR_DEFINED
@@ -1442,7 +1450,7 @@ RetError AccessibleAbilityClientImpl::SearchElementInfoByInspectorKey(const std:
     return RET_ERR_FAILED;
 }
 
-RetError AccessibleAbilityClientImpl::Connect()
+RetError AccessibleAbilityClientImpl::EnableUITestAbility(int32_t userId)
 {
     HILOG_DEBUG();
     std::shared_lock<ffrt::shared_mutex> rLock(rwServiceLock_);
@@ -1450,11 +1458,11 @@ RetError AccessibleAbilityClientImpl::Connect()
         HILOG_ERROR("failed to connect to aams.");
         return RET_ERR_SAMGR;
     }
-
-    return static_cast<RetError>(serviceProxy_->EnableUITestAbility(this->AsObject()));
+    userId_ = userId;
+    return static_cast<RetError>(serviceProxy_->EnableUITestAbility(this->AsObject(), userId));
 }
 
-RetError AccessibleAbilityClientImpl::Disconnect()
+RetError AccessibleAbilityClientImpl::DisableUITestAbility(int32_t userId)
 {
     HILOG_DEBUG();
     std::shared_lock<ffrt::shared_mutex> rLock(rwServiceLock_);
@@ -1462,7 +1470,13 @@ RetError AccessibleAbilityClientImpl::Disconnect()
         HILOG_ERROR("failed to connect to aams.");
         return RET_ERR_SAMGR;
     }
-    return static_cast<RetError>(serviceProxy_->DisableUITestAbility());
+    userId_ = -1;
+    return static_cast<RetError>(serviceProxy_->DisableUITestAbility(userId));
+}
+
+int32_t AccessibleAbilityClientImpl::GetCurrentUserId()
+{
+    return userId_;
 }
 
 void AccessibleAbilityClientImpl::SetConnectionState(bool state)

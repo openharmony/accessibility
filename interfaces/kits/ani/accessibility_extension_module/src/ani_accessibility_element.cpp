@@ -35,19 +35,19 @@ static ani_class g_accessibilityElementClass = nullptr;
 static ani_class g_focusMoveResultClass = nullptr;
 
 constexpr const char *ANI_ACCESSIBILITY_ELEMENT_CLS =
-    "application:AccessibilityExtensionContext.AccessibilityElementImpl";
+    "application.AccessibilityExtensionContext.AccessibilityElementImpl";
 constexpr const char *ANI_ACCESSIBILITY_ELEMENT_CLEANER_CLS =
-    "application:AccessibilityExtensionContext.AccessibilityElementCleaner";
+    "application.AccessibilityExtensionContext.AccessibilityElementCleaner";
 constexpr const char *ANI_ACCESSIBILITY_FOCUS_MOVE_RESULT_CLS =
-    "application:AccessibilityExtensionContext.FocusMoveResultImpl";
+    "application.AccessibilityExtensionContext.FocusMoveResultImpl";
 constexpr const char *ANI_ACCESSIBILITY_RECT_CLS =
-    "application:AccessibilityExtensionContext.RectImpl";
+    "application.AccessibilityExtensionContext.RectImpl";
 constexpr const char *ANI_ACCESSIBILITY_GRID_CLS =
-    "application:AccessibilityExtensionContext.AccessibilityGridImpl";
+    "application.AccessibilityExtensionContext.AccessibilityGridImpl";
 constexpr const char *ANI_ACCESSIBILITY_SPANS_CLS =
-    "application:AccessibilityExtensionContext.AccessibilitySpanImpl";
+    "application.AccessibilityExtensionContext.AccessibilitySpanImpl";
 constexpr const char *ANI_ACCESSIBILITY_ACTION_CLS =
-    "@ohos:accessibility.AccessibilityAction";
+    "@ohos.accessibility.AccessibilityAction";
 
 static const std::vector<Getter> FIELD_MAP = {
     {"accessibilityFocused", BoolGetter(&AccessibilityElementInfo::HasAccessibilityFocus)},
@@ -99,6 +99,9 @@ static const std::vector<Getter> FIELD_MAP = {
     {"mainWindowId", IntGetter(&AccessibilityElementInfo::GetMainWindowId)},
     {"clip", BoolGetter(&AccessibilityElementInfo::GetClip)},
     {"accessibilityStateDescription", StringGetter(&AccessibilityElementInfo::GetAccessibilityStateDescription)},
+    {"isEssential", BoolGetter(&AccessibilityElementInfo::IsEssential)},
+    {"belongTreeId", IntGetter(&AccessibilityElementInfo::GetBelongTreeId)},
+    {"childrenTreeId", IntGetter(&AccessibilityElementInfo::GetChildTreeId)},
 };
 
 bool InitializeAccessibilityElementClass(ani_env *env)
@@ -434,7 +437,7 @@ bool SetElementChildrenProperty(ani_env *env, ani_object& elementObj, const std:
     std::vector<ani_object> childrenArray;
     for (const auto &childId : children) {
         if (ANIUtils::CreateAniLong(env, childId, value) != ANI_OK) {
-            HILOG_ERROR("CreateAniLong failed for childId %{public}lld", childId);
+            HILOG_ERROR("CreateAniLong failed for childId %{public}" PRId64, childId);
             return false;
         }
         childrenArray.push_back(value);
@@ -468,7 +471,8 @@ std::string ConvertActionTypeToString(ActionType type)
         {ActionType::ACCESSIBILITY_ACTION_SPAN_CLICK, "spanClick"},
         {ActionType::ACCESSIBILITY_ACTION_CUSTOM, "customActions"},
         {ActionType::ACCESSIBILITY_ACTION_NEXT_HTML_ITEM, "nextHtmlItem"},
-        {ActionType::ACCESSIBILITY_ACTION_PREVIOUS_HTML_ITEM, "previousHtmlItem"}
+        {ActionType::ACCESSIBILITY_ACTION_PREVIOUS_HTML_ITEM, "previousHtmlItem"},
+        {ActionType::ACCESSIBILITY_ACTION_INJECT_ACTION, "injectAction"}
     };
 
     if (triggerActionTable.find(type) == triggerActionTable.end()) {
@@ -529,6 +533,7 @@ int32_t ConvertOperationTypeToTarget(ActionType type)
         {ActionType::ACCESSIBILITY_ACTION_SET_CURSOR_POSITION, AccessibilityAction::SET_CURSOR_POSITION},
         {ActionType::ACCESSIBILITY_ACTION_SET_TEXT, AccessibilityAction::SET_TEXT},
         {ActionType::ACCESSIBILITY_ACTION_SPAN_CLICK, AccessibilityAction::SPAN_CLICK},
+        {ActionType::ACCESSIBILITY_ACTION_INJECT_ACTION, AccessibilityAction::INJECT_ACTION},
         {ActionType::ACCESSIBILITY_ACTION_CUSTOM, AccessibilityAction::CUSTOM_ACTION}
     };
 
@@ -849,7 +854,7 @@ ani_object FindElement(ani_env *env, ani_object thisObj, ani_string type, ani_lo
     }
 
     int64_t elementId = static_cast<int64_t>(condition);
-    HILOG_DEBUG("Finding element by ID: %{public}lld", elementId);
+    HILOG_DEBUG("Finding element by ID: %{public}" PRId64, elementId);
 
     FindElementParams param = {FIND_ELEMENT_CONDITION_ELEMENT_ID, std::to_string(elementId), *element};
 
@@ -1103,7 +1108,7 @@ void FindElementExecute(FindElementParams* data)
                 if (windowId == 1) {
                     windowId = data->accessibilityElement_.elementInfo_->GetMainWindowId();
                 }
-                HILOG_DEBUG("elementId is %{public}lld windowId: %{public}d", elementId, windowId);
+                HILOG_DEBUG("elementId is %{public}" PRId64 " windowId: %{public}d", elementId, windowId);
                 data->ret_ = AccessibleAbilityClient::GetInstance()->GetByElementId(
                     elementId, windowId, data->nodeInfo_);
             }

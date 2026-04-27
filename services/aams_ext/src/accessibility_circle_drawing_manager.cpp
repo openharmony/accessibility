@@ -20,6 +20,8 @@
 #include "hilog_wrapper.h"
 #include "pipeline/rs_recording_canvas.h"
 #include "recording/recording_canvas.h"
+#include "transaction/rs_interfaces.h"
+#include "modifier/rs_property.h"
 
 namespace OHOS {
 namespace Accessibility {
@@ -118,7 +120,7 @@ AccessibilityCircleDrawingManager::~AccessibilityCircleDrawingManager()
     surfaceNode_->DetachToDisplay(screenId_);
     surfaceNode_ = nullptr;
     canvasNode_ = nullptr;
-    Rosen::RSTransaction::FlushImplicitTransaction();
+    FlushImplicitTransaction();
 }
 
 void AccessibilityCircleDrawingManager::UpdatePointerVisible(bool state)
@@ -130,7 +132,7 @@ void AccessibilityCircleDrawingManager::UpdatePointerVisible(bool state)
     }
 
     surfaceNode_->SetVisible(state);
-    Rosen::RSTransaction::FlushImplicitTransaction();
+    FlushImplicitTransaction();
 }
 
 void AccessibilityCircleDrawingManager::CreatePointerWindow(int32_t physicalX, int32_t physicalY, uint64_t screenId)
@@ -139,7 +141,14 @@ void AccessibilityCircleDrawingManager::CreatePointerWindow(int32_t physicalX, i
     Rosen::RSSurfaceNodeConfig surfaceNodeConfig;
     surfaceNodeConfig.SurfaceNodeName = "screen touch progress";
     Rosen::RSSurfaceNodeType surfaceNodeType = Rosen::RSSurfaceNodeType::SELF_DRAWING_WINDOW_NODE;
-    surfaceNode_ = Rosen::RSSurfaceNode::Create(surfaceNodeConfig, surfaceNodeType);
+    auto connectToRenderObj = Rosen::RSInterfaces::GetInstance().GetConnectToRenderToken(screenId);
+    rsUiDirector_ = Rosen::RSUIDirector::Create(connectToRenderObj);
+    if (!rsUiDirector_) {
+        return;
+    }
+
+    surfaceNode_ =
+        Rosen::RSSurfaceNode::Create(surfaceNodeConfig, surfaceNodeType, true, false, rsUiDirector_->GetRSUIContext());
     if (surfaceNode_ == nullptr) {
         HILOG_ERROR("create surfaceNode_ fail");
         return;
@@ -153,7 +162,7 @@ void AccessibilityCircleDrawingManager::CreatePointerWindow(int32_t physicalX, i
     surfaceNode_->AttachToDisplay(screenId);
     surfaceNode_->SetRotation(0);
 
-    canvasNode_ = Rosen::RSCanvasNode::Create();
+    canvasNode_ = Rosen::RSCanvasNode::Create(false, false, rsUiDirector_->GetRSUIContext());
     if (canvasNode_ == nullptr) {
         HILOG_ERROR("create canvasNode_ fail");
         return;
@@ -166,7 +175,7 @@ void AccessibilityCircleDrawingManager::CreatePointerWindow(int32_t physicalX, i
     canvasNode_->SetCornerRadius(1);
     canvasNode_->SetPositionZ(Rosen::RSSurfaceNode::POINTER_WINDOW_POSITION_Z);
     canvasNode_->SetRotation(0);
-    Rosen::RSTransaction::FlushImplicitTransaction();
+    FlushImplicitTransaction();
 }
 
 #ifndef USE_ROSEN_DRAWING
@@ -224,7 +233,7 @@ void AccessibilityCircleDrawingManager::DrawingProgressByOpenSource(int32_t phys
     canvas->drawArc(arcRect, startAngle_, angle, false, progressArcPaint);
 
     canvasNode_->FinishRecording();
-    Rosen::RSTransaction::FlushImplicitTransaction();
+    FlushImplicitTransaction();
 }
 #else
 void AccessibilityCircleDrawingManager::DrawingProgressByRosenDrawing(int32_t physicalX, int32_t physicalY,
@@ -288,7 +297,7 @@ void AccessibilityCircleDrawingManager::DrawingProgressByRosenDrawing(int32_t ph
     canvas->DetachPen();
 
     canvasNode_->FinishRecording();
-    Rosen::RSTransaction::FlushImplicitTransaction();
+    FlushImplicitTransaction();
 }
 #endif
 
@@ -311,7 +320,7 @@ void AccessibilityCircleDrawingManager::SetPointerLocation(int32_t physicalX, in
             surfaceNode_->GetStagingProperties().GetBounds().w_);
         screenId_ = screenId;
         surfaceNode_->AttachToDisplay(screenId);
-        Rosen::RSTransaction::FlushImplicitTransaction();
+        FlushImplicitTransaction();
     }
 
     if (canvasNode_ != nullptr) {
@@ -323,7 +332,7 @@ void AccessibilityCircleDrawingManager::SetPointerLocation(int32_t physicalX, in
             0,
             canvasNode_->GetStagingProperties().GetBounds().z_,
             canvasNode_->GetStagingProperties().GetBounds().w_);
-        Rosen::RSTransaction::FlushImplicitTransaction();
+        FlushImplicitTransaction();
     }
 }
 
@@ -404,6 +413,18 @@ std::vector<int32_t> AccessibilityCircleDrawingManager::ParseColorString(const s
 
     std::vector<int32_t> rgbValue = {rValue, gValue, bValue};
     return rgbValue;
+}
+
+void AccessibilityCircleDrawingManager::FlushImplicitTransaction()
+{
+    if (rsUiDirector_ && rsUiDirector_->GetRSUIContext()) {
+        auto rsUIContext = rsUiDirector_->GetRSUIContext();
+        if (rsUIContext && rsUIContext->GetRSTransaction()) {
+            rsUIContext->GetRSTransaction()->FlushImplicitTransaction();
+            return;
+        }
+    }
+    HILOG_ERROR("FlushImplicitTransaction failed");
 }
 } // namespace Accessibility
 } // namespace OHOS

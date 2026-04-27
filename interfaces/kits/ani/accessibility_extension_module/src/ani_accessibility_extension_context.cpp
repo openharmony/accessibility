@@ -30,8 +30,8 @@ using namespace arkts::ani_signature;
 using namespace Security::AccessToken;
 
 constexpr const char *ANI_EXTENSION_CONTEXT_CLS =
-    "application:AccessibilityExtensionContext.AccessibilityExtensionContext";
-constexpr const char *WANT_CLS = "@ohos:app.ability.Want.Want";
+    "application.AccessibilityExtensionContext.AccessibilityExtensionContext";
+constexpr const char *WANT_CLS = "@ohos.app.ability.Want.Want";
 
 static void StartAbility([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object, ani_object wantObj)
 {
@@ -141,7 +141,7 @@ static ani_object GetElementsNative(ani_env *env, ani_object thisObj, ani_int wi
         }
         elementIdValue = static_cast<int64_t>(result);
     }
-    HILOG_DEBUG("GetElementsNative begin, windowId: %{public}d, elementId: %{public}lld", windowId, elementIdValue);
+    HILOG_DEBUG("GetElementsNative begin, windowId: %{public}d, elementId: %{public}" PRId64, windowId, elementIdValue);
     std::vector<AccessibilityElementInfo> accessibilityElementsInfo;
     RetError ret = context->GetElements(static_cast<int32_t>(windowId), elementIdValue, accessibilityElementsInfo);
     if (ret != RET_OK) {

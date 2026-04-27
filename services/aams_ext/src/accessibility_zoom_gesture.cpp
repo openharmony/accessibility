@@ -20,6 +20,8 @@
 #include "ext_utils.h"
 #include "accessibility_input_interceptor.h"
 #include "extend_service_manager.h"
+#include "accessibility_def.h"
+#include "magnification_window.h"
 #ifdef OHOS_BUILD_ENABLE_POWER_MANAGER
 #include "accessibility_extend_power_manager.h"
 #endif
@@ -30,12 +32,12 @@
 namespace OHOS {
 namespace Accessibility {
 namespace {
-    constexpr size_t POINTER_COUNT_1 = 1;
-    constexpr size_t POINTER_COUNT_2 = 2;
     constexpr float TAP_MIN_DISTANCE = 8.0f;
+    constexpr int32_t MULTI_FINGER_TAP_INTERVAL_TIMER = 100; // ms
     constexpr int32_t MULTI_TAP_TIMER = 250; // ms
     constexpr int32_t LONG_PRESS_TIMER = 300; // ms
     constexpr float DOUBLE_TAP_SLOP = 100.0f;
+    constexpr uint32_t DOUBLE_TAP_COUNT = 2;
     constexpr uint32_t TRIPLE_TAP_COUNT = 3;
     constexpr float MIN_SCROLL_SPAN = 2.0f;
     constexpr float MIN_SCALE_SPAN = 2.0f;
@@ -44,14 +46,19 @@ namespace {
 
 AccessibilityZoomGesture::AccessibilityZoomGesture(
     std::shared_ptr<FullScreenMagnificationManager> fullScreenManager,
+    std::shared_ptr<WindowMagnificationManager> windowMagnificationManager,
     std::shared_ptr<MagnificationMenuManager> menuManager)
-    : fullScreenManager_(fullScreenManager), menuManager_(menuManager)
+    : fullScreenManager_(fullScreenManager),
+    windowMagnificationManager_(windowMagnificationManager),
+    menuManager_(menuManager)
 {
     HILOG_DEBUG();
     zoomGestureEventHandler_ = std::make_shared<ZoomGestureEventHandler>(
         AccessibilityInputInterceptor::GetInstance()->GetInputManagerRunner(), *this);
-
-    tapDistance_ = TAP_MIN_DISTANCE;
+    magnificationMode_ = Singleton<ExtendServiceManager>::GetInstance().getMagnificationModeCallback();
+    gestureMode_ = Singleton<ExtendServiceManager>::GetInstance().getMagnificationTriggerMethodCallback();
+    scale_ = Singleton<ExtendServiceManager>::GetInstance().getMagnificationScaleCallback();
+    hasNotifyConflict_ = Singleton<ExtendServiceManager>::GetInstance().getNotifyZoomGestureConflictCallback();
 
 #ifdef OHOS_BUILD_ENABLE_DISPLAY_MANAGER
     AccessibilityDisplayManager &displayMgr = Singleton<AccessibilityDisplayManager>::GetInstance();
@@ -62,12 +69,16 @@ AccessibilityZoomGesture::AccessibilityZoomGesture(
     }
 
     float densityPixels = display->GetVirtualPixelRatio();
+    tapDistance_ = TAP_MIN_DISTANCE;
     multiTapDistance_ = densityPixels * DOUBLE_TAP_SLOP + 0.5f;
 #else
     HILOG_DEBUG("not support display manager");
     multiTapDistance_ = 1 * DOUBLE_TAP_SLOP + 0.5f;
 #endif
+
+    InitGestureFuncMap();
 }
+
 
 bool AccessibilityZoomGesture::IsTapOnInputMethod(MMI::PointerEvent &event)
 {
@@ -78,7 +89,7 @@ bool AccessibilityZoomGesture::IsTapOnInputMethod(MMI::PointerEvent &event)
     }
 
     std::vector<AccessibilityWindowInfo> windowInfos =
-        Singleton<ExtendServiceManager>::GetInstance().getAccessibilityWindowsCallback();
+        Singleton<ExtendServiceManager>::GetInstance().getAccessibilityWindowsCallback(event.GetTargetDisplayId());
     for (auto &window : windowInfos) {
         if (window.GetWindowType() != INPUT_METHOD_WINDOW_TYPE) {
             continue;
@@ -103,9 +114,30 @@ bool AccessibilityZoomGesture::IsTapOnInputMethod(MMI::PointerEvent &event)
     return false;
 }
 
+void AccessibilityZoomGesture::DisableGesture()
+{
+    OffZoom();
+}
+void AccessibilityZoomGesture::StartMagnificationInteract()
+{
+    zoomState_ = ZOOM;
+}
+
+bool AccessibilityZoomGesture::IsDownValid(std::shared_ptr<MMI::PointerEvent> curEvent,
+    std::shared_ptr<MMI::PointerEvent> lastEvent)
+{
+    return CalcSeparationDistance(*curEvent, *lastEvent) <= multiTapDistance_;
+}
+
+bool AccessibilityZoomGesture::IsMoveValid(std::shared_ptr<MMI::PointerEvent> curEvent,
+    std::shared_ptr<MMI::PointerEvent> lastEvent)
+{
+    return CalcSeparationDistance(*curEvent, *lastEvent) <= tapDistance_;
+}
+
 bool AccessibilityZoomGesture::OnPointerEvent(MMI::PointerEvent &event)
 {
-    HILOG_DEBUG("state_ is %{public}d.", state_);
+    HILOG_DEBUG("zoomGestureState_ is %{public}d.", zoomGestureState_);
 
     if (shieldZoomGestureFlag_) {
         EventTransmission::OnPointerEvent(event);
@@ -118,7 +150,7 @@ bool AccessibilityZoomGesture::OnPointerEvent(MMI::PointerEvent &event)
     }
 
     int32_t sourceType = event.GetSourceType();
-    if (state_ == READY_STATE && sourceType != MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN) {
+    if (zoomState_ == READY && sourceType != MMI::PointerEvent::SOURCE_TYPE_TOUCHSCREEN) {
         EventTransmission::OnPointerEvent(event);
         return false;
     }
@@ -136,69 +168,223 @@ bool AccessibilityZoomGesture::OnPointerEvent(MMI::PointerEvent &event)
         return false;
     }
 
-    switch (state_) {
-        case READY_STATE:
-            CacheEvents(event);
-            RecognizeInReadyState(event);
-            break;
-        case ZOOMIN_STATE:
-            CacheEvents(event);
-            RecognizeInZoomState(event);
-            break;
-        case SLIDING_STATE:
-            RecognizeInSlidingState(event);
-            break;
-        case MENU_SLIDING_STATE:
-            RecognizeInMenuSlidingState(event);
-            break;
-        case DRAGGING_STATE:
-            RecognizeInDraggingState(event);
-            break;
-        default:
-            break;
-    }
+    OnPointerEventExecute(event);
     return true;
 }
 
-void AccessibilityZoomGesture::TransferState(ACCESSIBILITY_ZOOM_STATE state)
+void AccessibilityZoomGesture::OnPointerEventExecute(MMI::PointerEvent &event)
 {
-    HILOG_INFO("old state= %{public}d, new state= %{public}d", state_, state);
-    state_ = state;
+    int32_t action = event.GetPointerAction();
+    if (action < 1 || action >= POINTER_ACTION_MAX) {
+        HILOG_ERROR("invalid action=%{public}d", action);
+        EventTransmission::OnPointerEvent(event);
+        return;
+    }
+    if (zoomGestureState_ == INVALID) {
+        if (action == MMI::PointerEvent::POINTER_ACTION_UP && event.GetPointerIds().size() == 1) {
+            TransferState(INIT);
+        }
+        return;
+    }
+    if (zoomGestureState_ == PASSING_THROUGH) {
+        if (action == MMI::PointerEvent::POINTER_ACTION_UP && event.GetPointerIds().size() == 1) {
+            TransferState(INIT);
+        }
+        SendEventToMultimodal(event);
+        return;
+    }
+    auto func = handlerFuncMap_[gestureMode_][zoomState_][zoomGestureState_][action];
+    if (func != nullptr) {
+        func(event);
+    } else {
+        CacheEvents(event);
+        SendCacheEventsToNext();
+        HILOG_ERROR("no handler for gestureMode=%{public}d, magState=%{public}d, state=%{public}d, action=%{public}d",
+                    gestureMode_, zoomState_, zoomGestureState_, action);
+        if (action == MMI::PointerEvent::POINTER_ACTION_UP && event.GetPointerIds().size() == 1) {
+            return;
+        }
+        TransferState(PASSING_THROUGH);
+    }
+}
+
+void AccessibilityZoomGesture::InitGestureFuncMap()
+{
+    HILOG_DEBUG();
+
+    InitSingleFingerTripleTapFuncMap();
+    InitThreeFingerDoubleTapFuncMap();
+            }
+
+void AccessibilityZoomGesture::InitSingleFingerTripleTapFuncMap()
+{
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][READY][INIT][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleSTReadyInitStateDown);
+
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][READY][ONE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_UP] =
+        BIND(HandleSTReadyOneFingerDownStateUp);
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][READY][ONE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleSTReadyOneFingerDownStateMove);
+
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][READY][ONE_FINGER_TAP][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleSTReadyOneFingerTapStateDown);
+
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][HOLD][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleHoldStateDown);
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][HOLD][MMI::PointerEvent::POINTER_ACTION_UP] =
+        BIND(HandleHoldStateUp);
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][HOLD][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleHoldStateMove);
+
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][INIT][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleSTZoomInitStateDown);
+
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][ONE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleSTZoomOneFingerDownStateDown);
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][ONE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_UP] =
+        BIND(HandleSTZoomOneFingerDownStateUp);
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][ONE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleSTZoomOneFingerDownStateMove);
+
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][TWO_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleSTZoomTwoFingerDownStateMove);
+
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][ONE_FINGER_TAP][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleSTZoomOneFingerTapStateDown);
+
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][SLIDING][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleZoomSlidingStateDown);
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][SLIDING][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleZoomSlidingStateMove);
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][SLIDING][MMI::PointerEvent::POINTER_ACTION_UP] =
+        BIND(HandleZoomSlidingStateUp);
+
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][HOT_AREA_SLIDING][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(DoNothingHandler);
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][HOT_AREA_SLIDING][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleHotAreaSlidingStateMove);
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][HOT_AREA_SLIDING][MMI::PointerEvent::POINTER_ACTION_UP] =
+        BIND(HandleHotAreaSlidingStateUp);
+
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][MENU_SLIDING][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(DoNothingHandler);
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][MENU_SLIDING][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleMenuSlidingStateMove);
+    handlerFuncMap_[SINGLE_FINGER_TRIPLE_TAP_MODE][ZOOM][MENU_SLIDING][MMI::PointerEvent::POINTER_ACTION_UP] =
+        BIND(HandleMenuSlidingStateUp);
+}
+
+void AccessibilityZoomGesture::InitThreeFingerDoubleTapFuncMap()
+{
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][READY][INIT][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleTDReadyInitStateDown);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][READY][ONE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleTDReadyOneFingerDownStateDown);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][READY][ONE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleTDReadyOneFingerDownStateMove);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][READY][TWO_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleTDReadyTwoFingersDownStateDown);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][READY][TWO_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleTDReadyTwoFingersDownStateMove);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][READY][THREE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_UP] =
+        BIND(HandleTDReadyThreeFingersDownStateUp);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][READY][THREE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleTDReadyThreeFingersDownStateMove);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][READY][THREE_FINGER_TAP][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleTDReadyThreeFingersTapStateDown);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][READY][THREE_FINGER_TAP][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleTDReadyThreeFingersTapStateMove);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][READY][THREE_FINGER_TAP_THEN_DOWN]
+        [MMI::PointerEvent::POINTER_ACTION_UP] = BIND(HandleTDReadyThreeFingersContinueDownStateUp);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][READY][THREE_FINGER_TAP_THEN_DOWN]
+        [MMI::PointerEvent::POINTER_ACTION_MOVE] = BIND(HandleTDReadyThreeFingersContinueDownStateMove);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][HOLD][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleHoldStateDown);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][HOLD][MMI::PointerEvent::POINTER_ACTION_UP] =
+        BIND(HandleHoldStateUp);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][HOLD][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleHoldStateMove);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][INIT][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleTDZoomInitStateDown);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][ONE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleTDZoomOneFingerDownStateDown);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][ONE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleTDZoomOneFingerDownStateMove);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][ONE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_UP] =
+        BIND(HandleTDZoomOneFingerDownStateUp);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][TWO_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleTDZoomTwoFingersDownStateDown);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][TWO_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleTDZoomTwoFingersDownStateMove);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][THREE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_UP] =
+        BIND(HandleTDZoomThreeFingersDownStateUp);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][THREE_FINGER_DOWN][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleTDZoomThreeFingersDownStateMove);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][THREE_FINGER_TAP][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleTDZoomThreeFingersTapStateDown);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][THREE_FINGER_TAP][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleTDZoomThreeFingersTapStateMove);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][THREE_FINGER_TAP_THEN_DOWN]
+        [MMI::PointerEvent::POINTER_ACTION_UP] = BIND(HandleTDZoomThreeFingersContinueDownStateUp);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][THREE_FINGER_TAP_THEN_DOWN]
+        [MMI::PointerEvent::POINTER_ACTION_MOVE] = BIND(HandleTDZoomThreeFingersContinueDownStateMove);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][SLIDING][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(HandleZoomSlidingStateDown);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][SLIDING][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleZoomSlidingStateMove);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][SLIDING][MMI::PointerEvent::POINTER_ACTION_UP] =
+        BIND(HandleZoomSlidingStateUp);
+    
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][HOT_AREA_SLIDING][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(DoNothingHandler);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][HOT_AREA_SLIDING][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleHotAreaSlidingStateMove);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][HOT_AREA_SLIDING][MMI::PointerEvent::POINTER_ACTION_UP] =
+        BIND(HandleHotAreaSlidingStateUp);
+
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][MENU_SLIDING][MMI::PointerEvent::POINTER_ACTION_DOWN] =
+        BIND(DoNothingHandler);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][MENU_SLIDING][MMI::PointerEvent::POINTER_ACTION_MOVE] =
+        BIND(HandleMenuSlidingStateMove);
+    handlerFuncMap_[THREE_FINGER_DOUBLE_TAP_MODE][ZOOM][MENU_SLIDING][MMI::PointerEvent::POINTER_ACTION_UP] =
+        BIND(HandleMenuSlidingStateUp);
+}
+
+void AccessibilityZoomGesture::SetMagnificationMode(uint32_t mode)
+{
+    magnificationMode_ = mode;
+            }
+
+
+void AccessibilityZoomGesture::SetGestureMode(int32_t mode)
+{
+    HILOG_INFO("Set gesture mode: %{public}d", mode);
+    gestureMode_ = mode;
+}
+
+void AccessibilityZoomGesture::TransferState(int32_t state)
+{
+    HILOG_INFO("old state= %{public}d, new state= %{public}d", zoomGestureState_, state);
+    zoomGestureState_ = state;
 }
 
 void AccessibilityZoomGesture::CacheEvents(MMI::PointerEvent &event)
 {
     HILOG_DEBUG();
-
-    int32_t action = event.GetPointerAction();
-    size_t pointerCount = event.GetPointerIds().size();
     std::shared_ptr<MMI::PointerEvent> pointerEvent = std::make_shared<MMI::PointerEvent>(event);
-
-    switch (action) {
-        case MMI::PointerEvent::POINTER_ACTION_DOWN:
-            if (pointerCount == POINTER_COUNT_1) {
-                HILOG_DEBUG("Cache pointer down");
-                preLastDownEvent_ = lastDownEvent_;
-                lastDownEvent_ = pointerEvent;
-            }
-            break;
-        case MMI::PointerEvent::POINTER_ACTION_UP:
-            if (pointerCount == POINTER_COUNT_1) {
-                HILOG_DEBUG("Cache pointer up");
-                preLastUpEvent_ = lastUpEvent_;
-                lastUpEvent_ = pointerEvent;
-            }
-            break;
-        case MMI::PointerEvent::POINTER_ACTION_MOVE:
-            if (pointerCount == POINTER_COUNT_1) {
-                HILOG_DEBUG("Cache pointer move.");
-                currentMoveEvent_ = pointerEvent;
-            }
-            break;
-        default:
-            HILOG_DEBUG("Action is %{public}d", action);
-            break;
-    }
     cacheEvents_.emplace_back(pointerEvent);
 }
 
@@ -206,38 +392,30 @@ void AccessibilityZoomGesture::SendCacheEventsToNext()
 {
     HILOG_DEBUG();
 
-    bool isStartNewAction = false;
-    int32_t action = MMI::PointerEvent::POINTER_ACTION_UNKNOWN;
-    std::vector<std::shared_ptr<MMI::PointerEvent>> cacheEventsTmp;
-    std::copy(cacheEvents_.begin(), cacheEvents_.end(), std::back_inserter(cacheEventsTmp));
-
+    if (fullScreenManager_ == nullptr) {
+        HILOG_ERROR("fullScreenManager_ is nullptr.");
+        return;
+    }
+    bool isMagnificationWindowShow = fullScreenManager_->IsMagnificationWindowShow();
+    for (auto &pointerEvent : cacheEvents_) {
+        SendEventToMultimodal(*pointerEvent);
+    }
     ClearCacheEventsAndMsg();
+}
 
-    size_t cacheEventsNum = 0;
-    size_t cacheEventsTotalNum = cacheEventsTmp.size();
-
+void AccessibilityZoomGesture::SendEventToMultimodal(MMI::PointerEvent event)
+{
     if (fullScreenManager_ == nullptr) {
         HILOG_ERROR("fullScreenManager_ is nullptr.");
         return;
     }
     
-    for (auto &pointerEvent : cacheEventsTmp) {
-        cacheEventsNum++;
-        action = pointerEvent->GetPointerAction();
-        if ((cacheEventsNum > 1) &&
-            (cacheEventsNum == cacheEventsTotalNum) &&
-            (action == MMI::PointerEvent::POINTER_ACTION_DOWN)) {
-            HILOG_DEBUG("The down event needs to be parsed again");
-            isStartNewAction = true;
-        }
-        if (isStartNewAction) {
-            OnPointerEvent(*pointerEvent);
-            continue;
-        }
-        if (state_ != READY_STATE && fullScreenManager_->IsMagnificationWindowShow()) {
+    if (zoomState_ == ZOOM) {
+        if (magnificationMode_ == FULL_SCREEN_MAGNIFICATION && fullScreenManager_->IsMagnificationWindowShow()) {
             MMI::PointerEvent::PointerItem pointer {};
-            pointerEvent->GetPointerItem(pointerEvent->GetPointerId(), pointer);
-            PointerPos coordinates  = fullScreenManager_->ConvertCoordinates(pointer.GetDisplayX(),
+        event.GetPointerItem(event.GetPointerId(), pointer);
+
+            PointerPos coordinates = fullScreenManager_->ConvertCoordinates(pointer.GetDisplayX(),
                 pointer.GetDisplayY());
             if (gestureType_ != INVALID_GESTURE_TYPE) {
                 coordinates = fullScreenManager_->ConvertGesture(gestureType_, coordinates);
@@ -245,13 +423,30 @@ void AccessibilityZoomGesture::SendCacheEventsToNext()
             pointer.SetDisplayX(coordinates.posX);
             pointer.SetDisplayY(coordinates.posY);
             pointer.SetTargetWindowId(-1);
-            pointerEvent->RemovePointerItem(pointerEvent->GetPointerId());
-            pointerEvent->AddPointerItem(pointer);
-            pointerEvent->SetZOrder(10000); // 10000 is magnification window zorder
+        event.RemovePointerItem(event.GetPointerId());
+        event.AddPointerItem(pointer);
+        event.SetZOrder(10000); // magnification zlevel is 10000
         }
-        pointerEvent->SetActionTime(ExtUtils::GetSystemTime() * US_TO_MS);
-        EventTransmission::OnPointerEvent(*pointerEvent);
+        if (magnificationMode_ != FULL_SCREEN_MAGNIFICATION &&
+            windowMagnificationManager_->IsMagnificationWindowShow()) {
+            MMI::PointerEvent::PointerItem pointer {};
+            event.GetPointerItem(event.GetPointerId(), pointer);
+            if (windowMagnificationManager_->IsTapOnMagnificationWindow(pointer.GetDisplayX(), pointer.GetDisplayY()) &&
+                !windowMagnificationManager_->IsTapOnHotArea(pointer.GetDisplayX(), pointer.GetDisplayY())) {
+                HILOG_ERROR("need convert pos");
+                PointerPos coordinates = windowMagnificationManager_->ConvertCoordinates(pointer.GetDisplayX(),
+                    pointer.GetDisplayY());
+                pointer.SetDisplayX(coordinates.posX);
+                pointer.SetDisplayY(coordinates.posY);
+                pointer.SetTargetWindowId(-1);
+                event.RemovePointerItem(event.GetPointerId());
+                event.AddPointerItem(pointer);
+                event.SetZOrder(10000); // magnification zlevel is 10000
+        }
     }
+}
+    event.SetActionTime(ExtUtils::GetSystemTime() * US_TO_MS);
+    EventTransmission::OnPointerEvent(event);
 }
 
 void AccessibilityZoomGesture::ClearCacheEventsAndMsg()
@@ -259,374 +454,84 @@ void AccessibilityZoomGesture::ClearCacheEventsAndMsg()
     HILOG_DEBUG();
 
     cacheEvents_.clear();
-    preLastDownEvent_ = nullptr;
     lastDownEvent_ = nullptr;
-    preLastUpEvent_ = nullptr;
-    lastUpEvent_ = nullptr;
-}
-
-void AccessibilityZoomGesture::RecognizeInReadyState(MMI::PointerEvent &event)
-{
-    HILOG_DEBUG();
-
-    int32_t action = event.GetPointerAction();
-    size_t pointerCount = event.GetPointerIds().size();
-    bool isTripleTaps = false;
-
-    HILOG_DEBUG("action:%{public}d, pointerCount:%{public}zu", action, pointerCount);
-    switch (action) {
-        case MMI::PointerEvent::POINTER_ACTION_DOWN:
-            zoomGestureEventHandler_->RemoveEvent(MULTI_TAP_MSG);
-            if ((pointerCount == POINTER_COUNT_1) && IsDownValid()) {
-                zoomGestureEventHandler_->SendEvent(MULTI_TAP_MSG, 0, MULTI_TAP_TIMER);
-                IsTripleTaps();
-            } else {
-                SendCacheEventsToNext();
-            }
-            break;
-        case MMI::PointerEvent::POINTER_ACTION_UP:
-            if ((pointerCount == POINTER_COUNT_1) && IsUpValid() && !(IsTapOnInputMethod(event))) {
-                isTripleTaps = IsTripleTaps();
-            } else {
-                SendCacheEventsToNext();
-                HILOG_DEBUG("action:%{public}d, pointerCount:%{public}zu", action, pointerCount);
-            }
-            break;
-        case MMI::PointerEvent::POINTER_ACTION_MOVE:
-            if ((pointerCount == POINTER_COUNT_1) && IsMoveValid()) {
-                HILOG_DEBUG("move valid.");
-            } else {
-                SendCacheEventsToNext();
-                HILOG_DEBUG("action:%{public}d, pointerCount:%{public}zu", action, pointerCount);
-            }
-            break;
-        case MMI::PointerEvent::POINTER_ACTION_CANCEL:
-            SendCacheEventsToNext();
-            break;
-        default:
-            break;
-    }
-
-    if (isTripleTaps) {
-        OnTripleTap(event);
-        zoomGestureEventHandler_->RemoveEvent(MULTI_TAP_MSG);
-    }
-}
-
-void AccessibilityZoomGesture::RecognizeInZoomStateDownEvent(MMI::PointerEvent &event)
-{
-    if (fullScreenManager_ == nullptr) {
-        HILOG_ERROR("fullScreenManager_ is nullptr.");
-        return;
-    }
-    if (menuManager_ == nullptr) {
-        HILOG_ERROR("menuManager_ is nullptr.");
-        return;
-    }
+    lastTripleTapEvents_[POINTER_ID_0] = nullptr;
+    lastTripleTapEvents_[POINTER_ID_1] = nullptr;
+    lastTripleTapEvents_[POINTER_ID_2] = nullptr;
     gestureType_ = INVALID_GESTURE_TYPE;
-    std::vector<int32_t> pointerIdList = event.GetPointerIds();
-    size_t pointerCount = pointerIdList.size();
+    bool isTapOnMenu_ = false;
+    bool isTapOnWindowHotArea_ = false;
+    bool isTapOnWindow_ = false;
+    lastCenter = {0.0f, 0.0f};
+
     zoomGestureEventHandler_->RemoveEvent(MULTI_TAP_MSG);
-    if (pointerCount == POINTER_COUNT_1) {
-        isLongPress_ = false;
-        isMoveValid_ = true;
-        MMI::PointerEvent::PointerItem pointerItem;
-        event.GetPointerItem(event.GetPointerId(), pointerItem);
-        gestureType_ = fullScreenManager_->CheckTapOnHotArea(pointerItem.GetDisplayX(), pointerItem.GetDisplayY());
-        isTapOnMenu_ = menuManager_->IsTapOnMenu(pointerItem.GetDisplayX(), pointerItem.GetDisplayY());
-        std::shared_ptr<MMI::PointerEvent> pointerEvent = std::make_shared<MMI::PointerEvent>(event);
-        longPressDownEvent_ = pointerEvent;
-        downPid_ = event.GetPointerId();
-        if (IsDownValid()) {
-            if (!isTapOnMenu_) {
-                zoomGestureEventHandler_->SendEvent(MULTI_TAP_MSG, 0, MULTI_TAP_TIMER);
+    zoomGestureEventHandler_->RemoveEvent(LONG_PRESS_MSG);
+    zoomGestureEventHandler_->RemoveEvent(HOLDING_MSG);
+    zoomGestureEventHandler_->RemoveEvent(TWO_FINGER_SLIDING_MSG);
+    zoomGestureEventHandler_->RemoveEvent(WAIT_ANOTHER_FINGER_DOWN_MSG);
+    zoomGestureEventHandler_->RemoveEvent(HOT_AREA_SLIDING_MSG);
+    zoomGestureEventHandler_->RemoveEvent(MENU_SLIDING_MSG);
+}
+
+
+void AccessibilityZoomGesture::RecognizeScroll(ZOOM_FOCUS_COORDINATE &coordinate)
+{
+    HILOG_DEBUG();
+    if (abs(lastCenter.centerX) < EPS && abs(lastCenter.centerY) < EPS) {
+        lastCenter.centerX = coordinate.centerX;
+        lastCenter.centerY = coordinate.centerY;
+        return;
+    }
+
+    float offsetX = coordinate.centerX - lastCenter.centerX;
+    float offsetY = coordinate.centerY - lastCenter.centerY;
+    if ((abs(offsetX) > MIN_SCROLL_SPAN) || (abs(offsetY) > MIN_SCROLL_SPAN)) {
+        lastCenter.centerX = coordinate.centerX;
+        lastCenter.centerY = coordinate.centerY;
+        OnScroll(offsetX, offsetY);
+    }
+}
+
+bool AccessibilityZoomGesture::RecognizeScale(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    float curDistance = CalcSeparationDistance(event);
+    if (abs(lastDistance_) < EPS) {
+        HILOG_WARN("lastDistance_ is zero");
+        lastDistance_ = curDistance;
+        return false;
+    }
+    if (magnificationMode_ == FULL_SCREEN_MAGNIFICATION) {
+        if (abs(lastDistance_ - curDistance) >=  MIN_SCALE_SPAN) {
+            if (fullScreenManager_ == nullptr) {
+                HILOG_ERROR("fullScreenManager_ is nullptr.");
+                    return false;
             }
+            fullScreenManager_->SetScale(curDistance / lastDistance_);
+            lastDistance_ = curDistance;
+            return true;
+        }
+    } else {
+        if (abs(baseDistance_ - curDistance) >  MIN_SCALE_DISTANCE) {
+            hasScaled_ = true;
+            if (windowMagnificationManager_ == nullptr) {
+                HILOG_ERROR("fullScreenManager_ is nullptr.");
+                return false;
+            }
+            windowMagnificationManager_->FixSourceCenter(true);
+            windowMagnificationManager_->SetScale(curDistance - lastDistance_);
+            lastDistance_ = curDistance;
+            return true;
         } else {
-            SendCacheEventsToNext();
-        }
-    } else if (pointerCount == POINTER_COUNT_2) {
-        gestureType_ = INVALID_GESTURE_TYPE;
-        if (isLongPress_ || IsKnuckles(event) || !isMoveValid_) {
-            HILOG_INFO("not transferState sliding.");
-            SendCacheEventsToNext();
-        } else {
-            TransferState(SLIDING_STATE);
-            scale_ = fullScreenManager_->GetScale();
-            isScale_ = false;
-            ClearCacheEventsAndMsg();
-            ZOOM_FOCUS_COORDINATE focusXY = {0.0f, 0.0f};
-            CalcFocusCoordinate(event, focusXY);
-            lastScrollFocusX_ = focusXY.centerX;
-            lastScrollFocusY_ = focusXY.centerY;
-            float span = CalcScaleSpan(event, focusXY);
-            preSpan_ = lastSpan_ = span;
-        }
-    } else {
-        HILOG_INFO("invalid pointer count.");
-    }
-}
-
-void AccessibilityZoomGesture::RecognizeInZoomStateMoveEvent(MMI::PointerEvent &event)
-{
-    int32_t action = event.GetPointerAction();
-    std::vector<int32_t> pointerIdList = event.GetPointerIds();
-    size_t pointerCount = pointerIdList.size();
-    HILOG_DEBUG();
-    if ((pointerCount == POINTER_COUNT_1) && !IsLongPress() && IsMoveValid()) {
-        HILOG_DEBUG("move valid.");
-    } else if (isTapOnMenu_ && (!IsMoveValid() || IsLongPress())) {
-        TransferState(MENU_SLIDING_STATE);
-        ClearCacheEventsAndMsg();
-    } else {
-        SendCacheEventsToNext();
-        HILOG_DEBUG("action:%{public}d, pointerCount:%{public}zu", action, pointerCount);
-    }
-}
-
-void AccessibilityZoomGesture::RecognizeInZoomState(MMI::PointerEvent &event)
-{
-    HILOG_DEBUG();
-
-    int32_t action = event.GetPointerAction();
-    std::vector<int32_t> pointerIdList = event.GetPointerIds();
-    size_t pointerCount = pointerIdList.size();
-    bool isTripleTaps = false;
-
-    HILOG_DEBUG("action:%{public}d, pointerCount:%{public}zu", action, pointerCount);
-    switch (action) {
-        case MMI::PointerEvent::POINTER_ACTION_DOWN:
-            RecognizeInZoomStateDownEvent(event);
-            break;
-        case MMI::PointerEvent::POINTER_ACTION_UP:
-            if (downPid_ == event.GetPointerId()) {
-                isLongPress_ = false;
+            if (hasScaled_) {
+                hasScaled_ = false;
+                CalcFocusCoordinate(event, lastCenter);
             }
-            if ((pointerCount == POINTER_COUNT_1) && IsUpValid() && !(IsTapOnInputMethod(event))) {
-                if (isTapOnMenu_ && menuManager_ != nullptr) {
-                    menuManager_->OnMenuTap();
-                    ClearCacheEventsAndMsg();
-                } else {
-                    isTripleTaps = IsTripleTaps();
-                }
-            } else {
-                SendCacheEventsToNext();
-            }
-            break;
-        case MMI::PointerEvent::POINTER_ACTION_MOVE:
-            RecognizeInZoomStateMoveEvent(event);
-            break;
-        case MMI::PointerEvent::POINTER_ACTION_CANCEL:
-            SendCacheEventsToNext();
-            HILOG_DEBUG("action:%{public}d", action);
-            break;
-        default:
-            break;
-    }
-
-    if (isTripleTaps) {
-        OnTripleTap(event);
-    }
-}
-
-void AccessibilityZoomGesture::RecognizeInSlidingState(MMI::PointerEvent &event)
-{
-    HILOG_DEBUG();
-
-    int32_t action = event.GetPointerAction();
-    size_t pointerCount = event.GetPointerIds().size();
-    ZOOM_FOCUS_COORDINATE coordinate = {0.0f, 0.0f};
-    CalcFocusCoordinate(event, coordinate);
-
-    if (pointerCount == POINTER_COUNT_2) {
-        RecognizeScale(event, coordinate);
-        RecognizeScroll(event, coordinate);
-    }
-
-    HILOG_DEBUG("action:%{public}d, pointerCount:%{public}zu", action, pointerCount);
-
-    if (fullScreenManager_ == nullptr) {
-        HILOG_ERROR("fullScreenManager_ is nullptr.");
-        return;
-    }
-
-    switch (action) {
-        case MMI::PointerEvent::POINTER_ACTION_UP:
-            if (pointerCount == POINTER_COUNT_1) {
-                TransferState(ZOOMIN_STATE);
-                if (isScale_ && (abs(scale_ - fullScreenManager_->GetScale()) > MIN_SCALE)) {
-                    fullScreenManager_->PersistScale();
-                    isScale_ = false;
-                }
-            }
-            break;
-        case MMI::PointerEvent::POINTER_ACTION_CANCEL:
-            TransferState(ZOOMIN_STATE);
-            isScale_ = false;
-            break;
-        default:
-            break;
-    }
-}
-
-void AccessibilityZoomGesture::RecognizeInMenuSlidingState(MMI::PointerEvent &event)
-{
-    HILOG_INFO();
-    if (menuManager_ == nullptr) {
-        HILOG_ERROR("menuManager_ is nullptr.");
-        return;
-    }
-    int32_t action = event.GetPointerAction();
-    switch (action) {
-        case MMI::PointerEvent::POINTER_ACTION_MOVE:
-            if (isTapOnMenu_) {
-                ClearCacheEventsAndMsg();
-                if (lastSlidingEvent_ == nullptr) {
-                    lastSlidingEvent_ = std::make_shared<MMI::PointerEvent>(event);
-                }
-                MMI::PointerEvent::PointerItem lastSlidingItem;
-                lastSlidingEvent_->GetPointerItem(lastSlidingEvent_->GetPointerId(), lastSlidingItem);
-
-                MMI::PointerEvent::PointerItem currentItem;
-                event.GetPointerItem(event.GetPointerId(), currentItem);
-
-                int32_t deltaX = currentItem.GetDisplayX() - lastSlidingItem.GetDisplayX();
-                int32_t deltaY = currentItem.GetDisplayY() - lastSlidingItem.GetDisplayY();
-                menuManager_->MoveMenuWindow(deltaX, deltaY);
-
-                lastSlidingEvent_ = std::make_shared<MMI::PointerEvent>(event);
-            } else {
-                if (lastSlidingEvent_ != nullptr) {
-                    lastSlidingEvent_ = nullptr;
-                }
-            }
-            break;
-        case MMI::PointerEvent::POINTER_ACTION_UP:
-            lastSlidingEvent_ = nullptr;
-            isTapOnMenu_ = false;
-            menuManager_->AttachToEdge();
-            TransferState(ZOOMIN_STATE);
-            ClearCacheEventsAndMsg();
-            break;
-        default:
-            break;
-    }
-}
-
-void AccessibilityZoomGesture::RecognizeScroll(MMI::PointerEvent &event, ZOOM_FOCUS_COORDINATE &coordinate)
-{
-    HILOG_DEBUG();
-
-    int32_t action = event.GetPointerAction();
-    switch (action) {
-        case MMI::PointerEvent::POINTER_ACTION_DOWN:
-        case MMI::PointerEvent::POINTER_ACTION_UP:
-            lastScrollFocusX_ = coordinate.centerX;
-            lastScrollFocusY_ = coordinate.centerY;
-            break;
-        case MMI::PointerEvent::POINTER_ACTION_MOVE: {
-            float offsetX = coordinate.centerX - lastScrollFocusX_;
-            float offsetY = coordinate.centerY - lastScrollFocusY_;
-            if ((abs(offsetX) > MIN_SCROLL_SPAN) || (abs(offsetY) > MIN_SCROLL_SPAN)) {
-                lastScrollFocusX_ = coordinate.centerX;
-                lastScrollFocusY_ = coordinate.centerY;
-                OnScroll(offsetX, offsetY);
-            }
-            break;
-        }
-        default:
-            break;
-    }
-}
-
-void AccessibilityZoomGesture::RecognizeScale(MMI::PointerEvent &event, ZOOM_FOCUS_COORDINATE &coordinate)
-{
-    HILOG_DEBUG();
-
-    int32_t action = event.GetPointerAction();
-    size_t pointerCount = event.GetPointerIds().size();
-    if (((action == MMI::PointerEvent::POINTER_ACTION_UP) && (pointerCount != POINTER_COUNT_2)) ||
-        (action == MMI::PointerEvent::POINTER_ACTION_CANCEL)) {
-        HILOG_DEBUG("Scaling is end");
-        startScaling_ = false;
-        preSpan_ = lastSpan_ = 0;
-        return;
-    }
-
-    float span = CalcScaleSpan(event, coordinate);
-
-    if (action == MMI::PointerEvent::POINTER_ACTION_MOVE) {
-        if (abs(preSpan_ - span) >= MIN_SCALE_SPAN) {
-            startScaling_ = true;
-            HILOG_DEBUG("start scaling.");
+            windowMagnificationManager_->FixSourceCenter(false);
+            return false;
         }
     }
-    if (!startScaling_) {
-        // When the span is greater than or equal to MIN_SCALE_SPAN, start scaling.
-        if (abs(preSpan_ - span) >= MIN_SCALE_SPAN) {
-            startScaling_ = true;
-            HILOG_DEBUG("start scaling.");
-        }
-    } else {
-        // When the span is smaller than the MIN_SCALE_SPAN,
-        // the scale recognition will be restarted.
-        if (abs(lastSpan_ - span) < 1) {
-            startScaling_ = false;
-            preSpan_ = lastSpan_ = span;
-        }
-        if ((action == MMI::PointerEvent::POINTER_ACTION_UP) ||
-            (action == MMI::PointerEvent::POINTER_ACTION_DOWN)) {
-            preSpan_ = lastSpan_ = span;
-        }
-    }
-
-    if (!startScaling_) {
-        HILOG_DEBUG("Current is not scaling");
-        return;
-    }
-
-    if (action != MMI::PointerEvent::POINTER_ACTION_MOVE) {
-        HILOG_DEBUG("Action(%{public}d) is not move", action);
-        return;
-    }
-
-    float scaleSpan = span - lastSpan_;
-    if (abs(scaleSpan) > EPS) {
-        OnScale(scaleSpan);
-        lastSpan_ = span;
-        isScale_ = true;
-    }
-}
-
-void AccessibilityZoomGesture::RecognizeInDraggingState(MMI::PointerEvent &event)
-{
-    HILOG_DEBUG();
-    int32_t action = event.GetPointerAction();
-    if (event.GetPointerId() != DEFAULT_POINTER_ID) {
-        return;
-    }
-    switch (action) {
-        case MMI::PointerEvent::POINTER_ACTION_MOVE: {
-            int32_t pointerId = event.GetPointerId();
-            MMI::PointerEvent::PointerItem item;
-            event.GetPointerItem(pointerId, item);
-            int32_t anchorX = item.GetDisplayX();
-            int32_t anchorY = item.GetDisplayY();
-            float offsetX = lastScrollFocusX_ - anchorX;
-            float offsetY = lastScrollFocusY_ - anchorY;
-            if ((abs(offsetX) > MIN_SCROLL_SPAN) || (abs(offsetY) > MIN_SCROLL_SPAN)) {
-                lastScrollFocusX_ = anchorX;
-                lastScrollFocusY_ = anchorY;
-                OnScroll(offsetX, offsetY);
-            }
-            break;
-        }
-        case MMI::PointerEvent::POINTER_ACTION_UP:
-            OffZoom();
-            TransferState(READY_STATE);
-            break;
-        default:
-            break;
-    }
+    return false;
 }
 
 void AccessibilityZoomGesture::CalcFocusCoordinate(MMI::PointerEvent &event, ZOOM_FOCUS_COORDINATE &coordinate)
@@ -648,17 +553,17 @@ void AccessibilityZoomGesture::CalcFocusCoordinate(MMI::PointerEvent &event, ZOO
         upPointerId = event.GetPointerId();
         HILOG_DEBUG("The pointer id of up is %{public}d", upPointerId);
         count--;
-    }
+            }
 
     if (!count) {
         HILOG_DEBUG("The size of PointerIds(down) is invalid");
         return;
-    }
+                }
 
     for (int32_t pointerId : pointerIdList) {
         if (pointerId == upPointerId) {
             continue;
-        }
+            }
         MMI::PointerEvent::PointerItem item;
         event.GetPointerItem(pointerId, item);
         sumX += static_cast<float>(item.GetRawDisplayX());
@@ -686,21 +591,7 @@ float AccessibilityZoomGesture::CalcScaleSpan(MMI::PointerEvent &event, ZOOM_FOC
         return span;
     }
 
-    if (action == MMI::PointerEvent::POINTER_ACTION_UP) {
-        upPointerId = event.GetPointerId();
-        HILOG_DEBUG("The pointer id of up is %{public}d", upPointerId);
-        count--;
-    }
-
-    if (!count) {
-        HILOG_DEBUG("The size of PointerIds(down) is invalid");
-        return span;
-    }
-
     for (int32_t pointerId : pointerIdList) {
-        if (pointerId == upPointerId) {
-            continue;
-        }
         MMI::PointerEvent::PointerItem item;
         event.GetPointerItem(pointerId, item);
         sumSpanX += static_cast<float>(abs(item.GetRawDisplayX() - coordinate.centerX));
@@ -712,80 +603,6 @@ float AccessibilityZoomGesture::CalcScaleSpan(MMI::PointerEvent &event, ZOOM_FOC
     span = hypot(spanX, spanY) / HALF;
     HILOG_DEBUG("The span is %{public}f", span);
     return span;
-}
-
-bool AccessibilityZoomGesture::IsDownValid()
-{
-    HILOG_DEBUG();
-
-    if (!preLastDownEvent_) {
-        HILOG_DEBUG("This is the first down event");
-        return true;
-    }
-
-    if (CalcSeparationDistance(preLastDownEvent_, lastDownEvent_) >= multiTapDistance_) {
-        HILOG_DEBUG("The down event is vailid");
-        return false;
-    }
-    return true;
-}
-
-bool AccessibilityZoomGesture::IsUpValid()
-{
-    HILOG_DEBUG();
-
-    if (!lastDownEvent_) {
-        HILOG_DEBUG("The up event is invailid");
-        return false;
-    }
-
-    if (CalcIntervalTime(lastDownEvent_, lastUpEvent_) >= LONG_PRESS_TIMER) {
-        HILOG_DEBUG("The time has exceeded the long press time");
-        return false;
-    }
-
-    if (CalcSeparationDistance(lastDownEvent_, lastUpEvent_) >= tapDistance_) {
-        HILOG_DEBUG("The distance has exceeded the threshold");
-        return false;
-    }
-    return true;
-}
-
-bool AccessibilityZoomGesture::IsMoveValid()
-{
-    HILOG_DEBUG();
-
-    if (!lastDownEvent_) {
-        HILOG_DEBUG("The move event is invailid");
-        isMoveValid_ = false;
-        return false;
-    }
-
-    if (CalcIntervalTime(lastDownEvent_, currentMoveEvent_) >= LONG_PRESS_TIMER) {
-        HILOG_DEBUG("The time has exceeded the long press time");
-        isMoveValid_ = false;
-        return false;
-    }
-
-    if (CalcSeparationDistance(lastDownEvent_, currentMoveEvent_) >= tapDistance_) {
-        HILOG_DEBUG("The distance has exceeded the threshold");
-        isMoveValid_ = false;
-        return false;
-    }
-    isMoveValid_ = true;
-    return true;
-}
-
-bool AccessibilityZoomGesture::IsLongPress()
-{
-    HILOG_DEBUG();
-
-    if (CalcIntervalTime(longPressDownEvent_, currentMoveEvent_) >= LONG_PRESS_TIMER) {
-        HILOG_DEBUG("The time has exceeded the long press time");
-        isLongPress_ = true;
-        return true;
-    }
-    return false;
 }
 
 bool AccessibilityZoomGesture::IsKnuckles(MMI::PointerEvent &event)
@@ -800,106 +617,46 @@ bool AccessibilityZoomGesture::IsKnuckles(MMI::PointerEvent &event)
         if (toolType == MMI::PointerEvent::TOOL_TYPE_KNUCKLE) {
             HILOG_INFO("is knuckle event.");
             return true;
-        }
+            }
     }
     return false;
 }
 
-bool AccessibilityZoomGesture::IsTripleTaps()
+float AccessibilityZoomGesture::CalcSeparationDistance(MMI::PointerEvent &event)
 {
-    HILOG_DEBUG();
-
-    uint32_t upEventCount = 0;
-    uint32_t downEventCount = 0;
-    int32_t action = MMI::PointerEvent::POINTER_ACTION_UNKNOWN;
-    for (auto &pointerEvent : cacheEvents_) {
-        action = pointerEvent->GetPointerAction();
-        if (action == MMI::PointerEvent::POINTER_ACTION_UP) {
-            upEventCount++;
-        }
-        if (action == MMI::PointerEvent::POINTER_ACTION_DOWN) {
-            downEventCount++;
-        }
+    std::vector<int32_t> pointerIdList = event.GetPointerIds();
+    size_t count = pointerIdList.size();
+    if (count != POINTER_COUNT_2) {
+        HILOG_ERROR("only two fingers can cal distance");
+        return 0.0f;
     }
-
-    if (downEventCount == TRIPLE_TAP_COUNT && upEventCount == TAP_COUNT_TWO) {
-        HILOG_INFO("Triple down detected");
-        isTripleDown_ = true;
-    }
-
-    if (upEventCount >= TRIPLE_TAP_COUNT) {
-        HILOG_DEBUG("Triple tap detected");
-        isTripleDown_ = false;
-        return true;
-    }
-
-    return false;
-}
-
-int64_t AccessibilityZoomGesture::CalcIntervalTime(std::shared_ptr<MMI::PointerEvent> firstEvent,
-    std::shared_ptr<MMI::PointerEvent> secondEvent)
-{
-    HILOG_DEBUG();
-
-    if (!firstEvent || !secondEvent) {
-        HILOG_DEBUG("The event is null");
-        return 0;
-    }
-
-    int64_t firstTime = firstEvent->GetActionTime();
-    int64_t secondTime = secondEvent->GetActionTime();
-    int64_t intervalTime = (secondTime - firstTime) / US_TO_MS;
-
-    return intervalTime;
-}
-
-float AccessibilityZoomGesture::CalcSeparationDistance(std::shared_ptr<MMI::PointerEvent> firstEvent,
-    std::shared_ptr<MMI::PointerEvent> secondEvent)
-{
-    HILOG_DEBUG();
-
-    if (!firstEvent || !secondEvent) {
-        HILOG_DEBUG("The event is null");
-        return 0;
-    }
-
     MMI::PointerEvent::PointerItem firstItem;
     MMI::PointerEvent::PointerItem secondItem;
-    firstEvent->GetPointerItem(firstEvent->GetPointerId(), firstItem);
-    secondEvent->GetPointerItem(secondEvent->GetPointerId(), secondItem);
+    event.GetPointerItem(pointerIdList[POINTER_ID_0], firstItem);
+    event.GetPointerItem(pointerIdList[POINTER_ID_1], secondItem);
     int32_t durationX = secondItem.GetDisplayX() - firstItem.GetDisplayX();
     int32_t durationY = secondItem.GetDisplayY() - firstItem.GetDisplayY();
     float distance = static_cast<float>(hypot(durationX, durationY));
-
+    HILOG_DEBUG("distance:%{public}f", distance);
     return distance;
 }
 
-void AccessibilityZoomGesture::OnTripleTap(MMI::PointerEvent &event)
+float AccessibilityZoomGesture::CalcSeparationDistance(MMI::PointerEvent &firstEvent,
+    MMI::PointerEvent &secondEvent)
 {
-    HILOG_INFO("state_ is %{public}d.", state_);
+    HILOG_DEBUG();
 
-    switch (state_) {
-        case READY_STATE: {
-            TransferState(ZOOMIN_STATE);
-            int32_t pointerId = event.GetPointerId();
-            MMI::PointerEvent::PointerItem item;
-            event.GetPointerItem(pointerId, item);
-            int32_t anchorX = item.GetDisplayX();
-            int32_t anchorY = item.GetDisplayY();
-            HILOG_DEBUG("anchorX:%{private}d, anchorY:%{private}d.", anchorX, anchorY);
-            OnZoom(anchorX, anchorY, true);
-            break;
-        }
-        case ZOOMIN_STATE:
-            TransferState(READY_STATE);
-            OffZoom();
-            break;
-        default:
-            break;
-    }
-
-    ClearCacheEventsAndMsg();
+    MMI::PointerEvent::PointerItem firstItem;
+    MMI::PointerEvent::PointerItem secondItem;
+    firstEvent.GetPointerItem(firstEvent.GetPointerId(), firstItem);
+    secondEvent.GetPointerItem(secondEvent.GetPointerId(), secondItem);
+    int32_t durationX = secondItem.GetDisplayX() - firstItem.GetDisplayX();
+    int32_t durationY = secondItem.GetDisplayY() - firstItem.GetDisplayY();
+    float distance = static_cast<float>(hypot(durationX, durationY));
+    HILOG_DEBUG("distance:%{public}f", distance);
+    return distance;
 }
+
 
 AccessibilityZoomGesture::ZoomGestureEventHandler::ZoomGestureEventHandler(
     const std::shared_ptr<AppExecFwk::EventRunner> &runner,
@@ -911,17 +668,54 @@ AccessibilityZoomGesture::ZoomGestureEventHandler::ZoomGestureEventHandler(
 void AccessibilityZoomGesture::ZoomGestureEventHandler::ProcessEvent(const AppExecFwk::InnerEvent::Pointer &event)
 {
     HILOG_DEBUG();
-
     uint32_t eventId = event->GetInnerEventId();
-    
     switch (eventId) {
         case MULTI_TAP_MSG:
             HILOG_DEBUG("process multi tap msg.");
-            if (zoomGesture_.isTripleDown_) {
-                zoomGesture_.OnDrag();
+            zoomGesture_.TransferState(INIT);
+            zoomGesture_.SendCacheEventsToNext();
+            break;
+        case HOLDING_MSG:
+            {
+            zoomGesture_.TransferState(HOLD);
+            if (zoomGesture_.gestureMode_ == SINGLE_FINGER_TRIPLE_TAP_MODE) {
+                int32_t pointerId = zoomGesture_.lastDownEvent_->GetPointerId();
+                MMI::PointerEvent::PointerItem item;
+                zoomGesture_.lastDownEvent_->GetPointerItem(pointerId, item);
+                int32_t anchorX = item.GetDisplayX();
+                int32_t anchorY = item.GetDisplayY();
+                HILOG_DEBUG("anchorX:%{private}d, anchorY:%{private}d.", anchorX, anchorY);
+                zoomGesture_.OnZoom(anchorX, anchorY, false);
             } else {
-                zoomGesture_.SendCacheEventsToNext();
+                int32_t anchorX = 0;
+                int32_t anchorY = 0;
+                for (int i = 0; i < POINTER_COUNT_3; i++) {
+                    MMI::PointerEvent::PointerItem pointerItem;
+                    zoomGesture_.lastTripleTapEvents_[i]->GetPointerItem(
+                        zoomGesture_.lastTripleTapEvents_[i]->GetPointerId(), pointerItem);
+                    anchorX += pointerItem.GetDisplayX();
+                    anchorY += pointerItem.GetDisplayY();
+                }
+                zoomGesture_.OnZoom(anchorX / POINTER_COUNT_3, anchorY / POINTER_COUNT_3, false);
             }
+            zoomGesture_.ClearCacheEventsAndMsg();
+            break;
+            }
+        case WAIT_ANOTHER_FINGER_DOWN_MSG:
+            zoomGesture_.TransferState(PASSING_THROUGH);
+            zoomGesture_.SendCacheEventsToNext();
+            break;
+        case TWO_FINGER_SLIDING_MSG:
+            zoomGesture_.TransferState(SLIDING);
+            zoomGesture_.ClearCacheEventsAndMsg();
+            break;
+        case HOT_AREA_SLIDING_MSG:
+            zoomGesture_.TransferState(HOT_AREA_SLIDING);
+            zoomGesture_.ClearCacheEventsAndMsg();
+            break;
+        case MENU_SLIDING:
+            zoomGesture_.TransferState(MENU_SLIDING);
+            zoomGesture_.ClearCacheEventsAndMsg();
             break;
         default:
             break;
@@ -948,94 +742,118 @@ void AccessibilityZoomGesture::GetWindowParam(bool needRefresh)
         screenHeight_ = static_cast<uint32_t>(display->GetHeight());
         HILOG_INFO("screenWidth_ = %{public}d, screenHeight_ = %{public}d.", screenWidth_, screenHeight_);
     }
-    screenSpan_ = hypot(screenWidth_, screenHeight_);
 #else
     HILOG_INFO("not support zoom");
 #endif
 }
 
-void AccessibilityZoomGesture::StartMagnificationInteract()
-{
-    HILOG_INFO();
-    TransferState(ZOOMIN_STATE);
-}
-
-void AccessibilityZoomGesture::DisableGesture()
-{
-    HILOG_INFO();
-    TransferState(READY_STATE);
-}
-
 void AccessibilityZoomGesture::OnZoom(int32_t anchorX, int32_t anchorY, bool showMenu)
 {
     HILOG_INFO();
-    centerX_ = anchorX;
-    centerY_ = anchorY;
-    if (fullScreenManager_ == nullptr) {
-        HILOG_ERROR("fullScreenManager_ is nullptr.");
-        return;
+    if (!hasNotifyConflict_ && gestureMode_ == THREE_FINGER_DOUBLE_TAP_MODE &&
+            AccessibilityInputInterceptor::GetInstance()->IsTouchExplorationEnabled()) {
+                Singleton<ExtendServiceManager>::GetInstance().notifyZoomGesutureConflictDialogCallback();
+                hasNotifyConflict_ = true;
+                return;
     }
-    fullScreenManager_->EnableMagnification(anchorX, anchorY);
-    HILOG_INFO("announcedForMagnificationCallback start");
+    zoomState_ = ZOOM;
+    if (menuManager_ == nullptr) {
+        HILOG_ERROR("menuManager_ is nullptr.");
+        return;
+            }
+    
+    if (magnificationMode_ == FULL_SCREEN_MAGNIFICATION) {
+        if (fullScreenManager_ == nullptr) {
+            HILOG_ERROR("fullScreenManager_ is nullptr.");
+            return;
+        }
+        fullScreenManager_->EnableMagnification(anchorX, anchorY);
+        if (showMenu) {
+            menuManager_->ShowMenuWindow(FULL_SCREEN_MAGNIFICATION);
+        }
+    } else {
+        if (windowMagnificationManager_ == nullptr) {
+            HILOG_ERROR("windowMagnificationManager_ is nullptr.");
+            return;
+        }
+        windowMagnificationManager_->EnableWindowMagnification(anchorX, anchorY);
+        if (showMenu) {
+            menuManager_->ShowMenuWindow(WINDOW_MAGNIFICATION);
+        }
+    }
     Singleton<ExtendServiceManager>::GetInstance().announcedForMagnificationCallback(
         AnnounceType::ANNOUNCE_MAGNIFICATION_SCALE);
-    if (showMenu && menuManager_ != nullptr) {
-        menuManager_->ShowMenuWindow(FULL_SCREEN_MAGNIFICATION);
-    }
     ExtUtils::RecordOnZoomGestureEvent("on", true);
 }
 
 void AccessibilityZoomGesture::OffZoom()
 {
     HILOG_INFO();
-    if (fullScreenManager_ == nullptr) {
-        HILOG_ERROR("fullScreenManager_ is nullptr.");
-        return;
-    }
-    if (menuManager_ == nullptr) {
-        HILOG_ERROR("menuManager_ is nullptr.");
-        return;
-    }
-    if (fullScreenManager_->IsMagnificationWindowShow()) {
-        HILOG_INFO("full magnification disable.");
-        fullScreenManager_->DisableMagnification(false);
+    zoomState_ = READY;
+    if (menuManager_ != nullptr) {
+        HILOG_DEBUG("disable menu window");
         menuManager_->DisableMenuWindow();
-        Singleton<ExtendServiceManager>::GetInstance().announcedForMagnificationCallback(
-            AnnounceType::ANNOUNCE_MAGNIFICATION_DISABLE);
     }
-    ExtUtils::RecordOnZoomGestureEvent("off", true);
+    if (magnificationMode_ == FULL_SCREEN_MAGNIFICATION) {
+        if (fullScreenManager_ != nullptr && fullScreenManager_->IsMagnificationWindowShow()) {
+            HILOG_DEBUG("disable full screen magnification");
+            fullScreenManager_->DisableMagnification(false);
+            Singleton<ExtendServiceManager>::GetInstance().announcedForMagnificationCallback(
+                AnnounceType::ANNOUNCE_MAGNIFICATION_DISABLE);
+            ExtUtils::RecordOnZoomGestureEvent("off", true);
+            return;
+        }
+    } else {
+        if (windowMagnificationManager_ != nullptr && windowMagnificationManager_->IsMagnificationWindowShow()) {
+            HILOG_DEBUG("disable window magnification");
+            windowMagnificationManager_->DisableWindowMagnification();
+            Singleton<ExtendServiceManager>::GetInstance().announcedForMagnificationCallback(
+                AnnounceType::ANNOUNCE_MAGNIFICATION_DISABLE);
+            ExtUtils::RecordOnZoomGestureEvent("off", true);
+            return;
+        }
+    }
 }
 
-// LCOV_EXCL_START
 void AccessibilityZoomGesture::OnScroll(float offsetX, float offsetY)
 {
     HILOG_DEBUG("offsetX:%{public}f, offsetY:%{public}f.", offsetX, offsetY);
-
-    if (fullScreenManager_ == nullptr) {
-        HILOG_ERROR("fullScreenManager_ is nullptr.");
+    if (magnificationMode_ == FULL_SCREEN_MAGNIFICATION) {
+        if (fullScreenManager_ == nullptr) {
+            HILOG_ERROR("fullScreenManager_ is nullptr.");
+            return;
+        }
+        fullScreenManager_->MoveMagnification(static_cast<int32_t>(offsetX), static_cast<int32_t>(offsetY));
+    } else {
+        if (windowMagnificationManager_ == nullptr) {
+            HILOG_ERROR("fullScreenManager_ is nullptr.");
         return;
     }
-    fullScreenManager_->MoveMagnification(static_cast<int32_t>(offsetX), static_cast<int32_t>(offsetY));
+        windowMagnificationManager_->MoveMagnificationWindow(static_cast<int32_t>(offsetX),
+            static_cast<int32_t>(offsetY));
+    }
 #ifdef OHOS_BUILD_ENABLE_POWER_MANAGER
     Singleton<AccessibilityExtendPowerManager>::GetInstance().RefreshActivity();
 #endif
 }
 
-void AccessibilityZoomGesture::OnScale(float scaleSpan)
+void AccessibilityZoomGesture::PersistScale()
 {
-    HILOG_DEBUG();
-    if (fullScreenManager_ == nullptr) {
-        HILOG_ERROR("fullScreenManager_ is nullptr.");
-        return;
+    float scale = MagnificationWindow::GetInstance().GetScale();
+    HILOG_DEBUG("scale = %{public}f", scale);
+    if (abs(scale_ - scale) > MIN_SCALE) {
+        Singleton<ExtendServiceManager>::GetInstance().magnificationScaleCallback(scale);
+        Singleton<ExtendServiceManager>::GetInstance().announcedForMagnificationCallback(
+            AnnounceType::ANNOUNCE_MAGNIFICATION_SCALE);
+        scale_ = scale;
     }
-    fullScreenManager_->SetScale(scaleSpan);
 }
 
 void AccessibilityZoomGesture::Clear()
 {
     HILOG_DEBUG();
     SendCacheEventsToNext();
-    TransferState(READY_STATE);
+    TransferState(INIT);
 }
 
 void AccessibilityZoomGesture::DestroyEvents()
@@ -1051,47 +869,845 @@ void AccessibilityZoomGesture::ShieldZoomGesture(bool state)
     if (menuManager_ == nullptr) {
         HILOG_ERROR("menuManager_ is nullptr.");
         return;
-    }
+        }
     HILOG_INFO("ShieldZoomGesture state = %{public}d", state);
     if (shieldZoomGestureFlag_ == state) {
         return;
     }
     shieldZoomGestureFlag_ = state;
     if (state) {
-        Clear();
-        menuManager_->DisableMenuWindow();
-        if (fullScreenManager_ == nullptr) {
-            HILOG_ERROR("fullScreenManager_ is nullptr.");
-            return;
-        }
-        if (!fullScreenManager_->IsMagnificationWindowShow()) {
-            return;
-        }
-        fullScreenManager_->DisableMagnification(true);
-        Singleton<ExtendServiceManager>::GetInstance().announcedForMagnificationCallback(
-            AnnounceType::ANNOUNCE_MAGNIFICATION_DISABLE);
+        OffZoom();
     }
 }
 
-void AccessibilityZoomGesture::OnDrag()
+void AccessibilityZoomGesture::DoNothingHandler(MMI::PointerEvent &event)
 {
-    TransferState(DRAGGING_STATE);
-    if (lastDownEvent_ == nullptr) {
-        HILOG_ERROR("lastDownEvent_ is nullptr");
+    HILOG_DEBUG();
+}
+
+void AccessibilityZoomGesture::HandleSTReadyInitStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    zoomGestureEventHandler_->RemoveEvent(MULTI_TAP_MSG);
+
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != 1) {
+        SendCacheEventsToNext();
         return;
     }
 
-    MMI::PointerEvent::PointerItem item;
-    lastDownEvent_->GetPointerItem(lastDownEvent_->GetPointerId(), item);
-
-    int32_t anchorX = item.GetDisplayX();
-    int32_t anchorY = item.GetDisplayY();
-    OnZoom(anchorX, anchorY, false);
-    lastScrollFocusX_ = static_cast<float>(anchorX);
-    lastScrollFocusY_ = static_cast<float>(anchorY);
-    isTripleDown_ = false;
-    ClearCacheEventsAndMsg();
+    lastDownEvent_ = std::make_shared<MMI::PointerEvent>(event);
+    singleFingerTapCount_ = 0;
+    zoomGestureEventHandler_->SendEvent(MULTI_TAP_MSG, 0, MULTI_TAP_TIMER);
+    TransferState(ONE_FINGER_DOWN);
 }
-// LCOV_EXCL_STOP
+
+void AccessibilityZoomGesture::HandleSTReadyOneFingerDownStateUp(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != 1 || IsTapOnInputMethod(event)) {
+        SendCacheEventsToNext();
+        TransferState(INIT);
+        return;
+    }
+
+    singleFingerTapCount_ += 1;
+    if (singleFingerTapCount_ == TRIPLE_TAP_COUNT) {
+        ClearCacheEventsAndMsg();
+        TransferState(INIT);
+            int32_t pointerId = event.GetPointerId();
+            MMI::PointerEvent::PointerItem item;
+            event.GetPointerItem(pointerId, item);
+            int32_t anchorX = item.GetDisplayX();
+            int32_t anchorY = item.GetDisplayY();
+        HILOG_DEBUG("anchorX:%{private}d, anchorY:%{private}d.", anchorX, anchorY);
+        OnZoom(anchorX, anchorY, true);
+    } else {
+        TransferState(ONE_FINGER_TAP);
+    }
+}
+
+void AccessibilityZoomGesture::HandleSTReadyOneFingerDownStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != 1 || !IsMoveValid(lastDownEvent_, std::make_shared<MMI::PointerEvent>(event))) {
+        SendCacheEventsToNext();
+        TransferState(INIT);
+        return;
+    }
+}
+
+void AccessibilityZoomGesture::HandleSTReadyOneFingerTapStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    zoomGestureEventHandler_->RemoveEvent(MULTI_TAP_MSG);
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != 1 || !IsDownValid(lastDownEvent_, std::make_shared<MMI::PointerEvent>(event))) {
+        SendCacheEventsToNext();
+        TransferState(INIT);
+        return;
+    }
+
+    lastDownEvent_ = std::make_shared<MMI::PointerEvent>(event);
+    TransferState(ONE_FINGER_DOWN);
+    if (singleFingerTapCount_ == DOUBLE_TAP_COUNT) {
+        zoomGestureEventHandler_->SendEvent(HOLDING_MSG, 0, LONG_PRESS_TIMER);
+    } else {
+        zoomGestureEventHandler_->SendEvent(MULTI_TAP_MSG, 0, MULTI_TAP_TIMER);
+    }
+}
+
+void AccessibilityZoomGesture::HandleSTZoomInitStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != 1) {
+        TransferState(PASSING_THROUGH);
+        SendCacheEventsToNext();
+        return;
+    }
+    MMI::PointerEvent::PointerItem pointerItem;
+    event.GetPointerItem(event.GetPointerId(), pointerItem);
+    if (magnificationMode_ == FULL_SCREEN_MAGNIFICATION) {
+        gestureType_ = fullScreenManager_->CheckTapOnHotArea(pointerItem.GetDisplayX(), pointerItem.GetDisplayY());
+    } else {
+        isTapOnWindowHotArea_ = windowMagnificationManager_->IsTapOnHotArea(pointerItem.GetDisplayX(),
+            pointerItem.GetDisplayY());
+        isTapOnWindow_ = windowMagnificationManager_->IsTapOnMagnificationWindow(pointerItem.GetDisplayX(),
+            pointerItem.GetDisplayY());
+    }
+    isTapOnMenu_ = menuManager_->IsTapOnMenu(pointerItem.GetDisplayX(), pointerItem.GetDisplayY());
+
+    lastDownEvent_ = std::make_shared<MMI::PointerEvent>(event);
+    lastTripleTapEvents_[POINTER_ID_0] = std::make_shared<MMI::PointerEvent>(event);
+    singleFingerTapCount_ = 0;
+    if (isTapOnWindowHotArea_) {
+        zoomGestureEventHandler_->SendEvent(HOT_AREA_SLIDING_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
+    } else if (isTapOnMenu_) {
+        zoomGestureEventHandler_->SendEvent(MENU_SLIDING_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
+    } else {
+        zoomGestureEventHandler_->SendEvent(WAIT_ANOTHER_FINGER_DOWN_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
+        }
+    zoomGestureEventHandler_->SendEvent(MULTI_TAP_MSG, 0, MULTI_TAP_TIMER);
+    TransferState(ONE_FINGER_DOWN);
+    }
+
+void AccessibilityZoomGesture::HandleSTZoomOneFingerDownStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    gestureType_ = INVALID_GESTURE_TYPE;
+
+    zoomGestureEventHandler_->RemoveEvent(MULTI_TAP_MSG);
+    zoomGestureEventHandler_->RemoveEvent(HOT_AREA_SLIDING_MSG);
+    zoomGestureEventHandler_->RemoveEvent(MENU_SLIDING_MSG);
+    zoomGestureEventHandler_->RemoveEvent(WAIT_ANOTHER_FINGER_DOWN_MSG);
+
+    MMI::PointerEvent::PointerItem pointerItem;
+    event.GetPointerItem(event.GetPointerId(), pointerItem);
+    isTapOnWindow_ = windowMagnificationManager_->IsTapOnMagnificationWindow(pointerItem.GetDisplayX(),
+        pointerItem.GetDisplayY());
+    if (magnificationMode_ != FULL_SCREEN_MAGNIFICATION && !isTapOnWindow_) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+    }
+    lastTripleTapEvents_[POINTER_ID_1] = std::make_shared<MMI::PointerEvent>(event);
+    if (magnificationMode_ == FULL_SCREEN_MAGNIFICATION || isTapOnWindow_) {
+        zoomGestureEventHandler_->SendEvent(TWO_FINGER_SLIDING_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
+        CalcFocusCoordinate(event, lastCenter);
+        baseDistance_ = lastDistance_ = CalcSeparationDistance(event);
+    }
+    TransferState(TWO_FINGER_DOWN);
+}
+
+void AccessibilityZoomGesture::HandleSTZoomOneFingerDownStateUp(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    zoomGestureEventHandler_->RemoveEvent(HOT_AREA_SLIDING_MSG);
+    zoomGestureEventHandler_->RemoveEvent(MENU_SLIDING_MSG);
+    zoomGestureEventHandler_->RemoveEvent(WAIT_ANOTHER_FINGER_DOWN_MSG);
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != 1) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+    }
+    if (menuManager_ != nullptr) {
+        MMI::PointerEvent::PointerItem pointerItem;
+        event.GetPointerItem(event.GetPointerId(), pointerItem);
+        if (isTapOnMenu_) {
+            menuManager_->OnMenuTap();
+            TransferState(INIT);
+            ClearCacheEventsAndMsg();
+            return;
+        }
+    }
+
+    singleFingerTapCount_ += 1;
+    if (singleFingerTapCount_ == POINTER_COUNT_3) {
+        TransferState(INIT);
+        ClearCacheEventsAndMsg();
+        OffZoom();
+    } else {
+        TransferState(ONE_FINGER_TAP);
+    }
+}
+
+void AccessibilityZoomGesture::HandleSTZoomOneFingerDownStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != 1 || !IsMoveValid(lastDownEvent_, std::make_shared<MMI::PointerEvent>(event))) {
+        if (isTapOnWindowHotArea_) {
+            ClearCacheEventsAndMsg();
+            TransferState(HOT_AREA_SLIDING);
+            return;
+        }
+        if (isTapOnMenu_) {
+            ClearCacheEventsAndMsg();
+            TransferState(MENU_SLIDING);
+            return;
+        }
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+    }
+}
+
+void AccessibilityZoomGesture::HandleSTZoomTwoFingerDownStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    if (event.GetPointerIds().size() != POINTER_COUNT_2) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+        }
+    int32_t pId = event.GetPointerId();
+    if (pId > POINTER_ID_2 || IsMoveValid(lastTripleTapEvents_[pId], std::make_shared<MMI::PointerEvent>(event))) {
+        return;
+    }
+    zoomGestureEventHandler_->RemoveEvent(TWO_FINGER_SLIDING_MSG);
+    if (magnificationMode_ != FULL_SCREEN_MAGNIFICATION && !isTapOnWindow_) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+    }
+    ClearCacheEventsAndMsg();
+    TransferState(SLIDING);
+}
+
+void AccessibilityZoomGesture::HandleSTZoomOneFingerTapStateDown(MMI::PointerEvent &event)
+{
+    CacheEvents(event);
+    zoomGestureEventHandler_->RemoveEvent(MULTI_TAP_MSG);
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != 1 || !IsDownValid(lastDownEvent_, std::make_shared<MMI::PointerEvent>(event))) {
+        SendCacheEventsToNext();
+        TransferState(INIT);
+        return;
+    }
+
+    lastDownEvent_ = std::make_shared<MMI::PointerEvent>(event);
+    TransferState(ONE_FINGER_DOWN);
+    zoomGestureEventHandler_->SendEvent(MULTI_TAP_MSG, 0, MULTI_TAP_TIMER);
+}
+
+void AccessibilityZoomGesture::HandleZoomSlidingStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    size_t pointerCount = event.GetPointerIds().size();
+    CalcFocusCoordinate(event, lastCenter);
+    if (pointerCount == POINTER_COUNT_2) {
+        baseDistance_ = lastDistance_ = CalcSeparationDistance(event);
+    }
+}
+
+void AccessibilityZoomGesture::HandleZoomSlidingStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    size_t pointerCount = event.GetPointerIds().size();
+    ZOOM_FOCUS_COORDINATE coordinate = {0.0f, 0.0f};
+    CalcFocusCoordinate(event, coordinate);
+    if (pointerCount != POINTER_COUNT_2) {
+        RecognizeScroll(coordinate);
+    } else {
+        if (magnificationMode_ == FULL_SCREEN_MAGNIFICATION) {
+            RecognizeScroll(coordinate);
+            RecognizeScale(event);
+        } else {
+            if (!RecognizeScale(event)) {
+                RecognizeScroll(coordinate);
+            }
+        }
+    }
+}
+
+void AccessibilityZoomGesture::HandleZoomSlidingStateUp(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount == POINTER_COUNT_1) {
+        TransferState(INIT);
+        PersistScale();
+    }
+    if (pointerCount == POINTER_COUNT_3) {
+        baseDistance_ = lastDistance_ = CalcSeparationDistance(event);
+    }
+    CalcFocusCoordinate(event, lastCenter);
+}
+
+void AccessibilityZoomGesture::HandleTDReadyInitStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    zoomGestureEventHandler_->RemoveEvent(WAIT_ANOTHER_FINGER_DOWN_MSG);
+
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != 1) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+    }
+
+    lastTripleTapEvents_[0] = std::make_shared<MMI::PointerEvent>(event);
+    zoomGestureEventHandler_->SendEvent(WAIT_ANOTHER_FINGER_DOWN_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
+    TransferState(ONE_FINGER_DOWN);
+}
+
+void AccessibilityZoomGesture::HandleTDReadyOneFingerDownStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    zoomGestureEventHandler_->RemoveEvent(WAIT_ANOTHER_FINGER_DOWN_MSG);
+
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != POINTER_COUNT_2) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+    }
+
+    lastTripleTapEvents_[POINTER_COUNT_1] = std::make_shared<MMI::PointerEvent>(event);
+    zoomGestureEventHandler_->SendEvent(WAIT_ANOTHER_FINGER_DOWN_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
+    TransferState(TWO_FINGER_DOWN);
+}
+
+void AccessibilityZoomGesture::HandleTDReadyOneFingerDownStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    int32_t pId = event.GetPointerId();
+    if (pId > POINTER_COUNT_2 || !IsMoveValid(lastTripleTapEvents_[pId], std::make_shared<MMI::PointerEvent>(event))) {
+        TransferState(PASSING_THROUGH);
+        SendCacheEventsToNext();
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDReadyTwoFingersDownStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    zoomGestureEventHandler_->RemoveEvent(WAIT_ANOTHER_FINGER_DOWN_MSG);
+
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != POINTER_COUNT_3) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+    }
+
+    lastTripleTapEvents_[POINTER_COUNT_2] = std::make_shared<MMI::PointerEvent>(event);
+    zoomGestureEventHandler_->SendEvent(MULTI_TAP_MSG, 0, MULTI_TAP_TIMER);
+    TransferState(THREE_FINGER_DOWN);
+}
+
+void AccessibilityZoomGesture::HandleTDReadyTwoFingersDownStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    int32_t pId = event.GetPointerId();
+    if (pId > POINTER_COUNT_2 || !IsMoveValid(lastTripleTapEvents_[pId], std::make_shared<MMI::PointerEvent>(event))) {
+        TransferState(PASSING_THROUGH);
+        SendCacheEventsToNext();
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDReadyThreeFingersDownStateUp(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount == POINTER_COUNT_1) {
+        TransferState(THREE_FINGER_TAP);
+    } else if (pointerCount > POINTER_COUNT_3) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDReadyThreeFingersDownStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    int32_t pId = event.GetPointerId();
+    if (pId > POINTER_COUNT_2 || !IsMoveValid(lastTripleTapEvents_[pId], std::make_shared<MMI::PointerEvent>(event))) {
+        TransferState(PASSING_THROUGH);
+        SendCacheEventsToNext();
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDReadyThreeFingersTapStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    zoomGestureEventHandler_->RemoveEvent(WAIT_ANOTHER_FINGER_DOWN_MSG);
+    zoomGestureEventHandler_->RemoveEvent(MULTI_TAP_MSG);
+    if (event.GetPointerId() < POINTER_COUNT_3) {
+        lastTripleTapEvents_[event.GetPointerId()] = std::make_shared<MMI::PointerEvent>(event);
+    }
+    uint32_t pointerSize = event.GetPointerIds().size();
+    if (pointerSize < POINTER_COUNT_3) {
+        zoomGestureEventHandler_->SendEvent(WAIT_ANOTHER_FINGER_DOWN_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
+    } else if (pointerSize == POINTER_COUNT_3) {
+        zoomGestureEventHandler_->SendEvent(HOLDING_MSG, 0, LONG_PRESS_TIMER);
+        TransferState(THREE_FINGER_TAP_THEN_DOWN);
+    } else {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDReadyThreeFingersTapStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    int32_t pId = event.GetPointerId();
+    if (pId > POINTER_COUNT_2 || !IsMoveValid(lastTripleTapEvents_[pId], std::make_shared<MMI::PointerEvent>(event))) {
+        TransferState(PASSING_THROUGH);
+        SendCacheEventsToNext();
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDReadyThreeFingersContinueDownStateUp(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    zoomGestureEventHandler_->RemoveEvent(HOLDING_MSG);
+
+    uint32_t pointerSize = event.GetPointerIds().size();
+    if (pointerSize == POINTER_COUNT_1) {
+        int32_t anchorX = 0;
+        int32_t anchorY = 0;
+        for (int i = 0; i < POINTER_COUNT_3; i++) {
+            MMI::PointerEvent::PointerItem pointerItem;
+            lastTripleTapEvents_[i]->GetPointerItem(lastTripleTapEvents_[i]->GetPointerId(), pointerItem);
+            anchorX += pointerItem.GetDisplayX();
+            anchorY += pointerItem.GetDisplayY();
+        }
+        OnZoom(anchorX / POINTER_COUNT_3, anchorY / POINTER_COUNT_3, true);
+        ClearCacheEventsAndMsg();
+        TransferState(INIT);
+    } else if (pointerSize > POINTER_COUNT_3) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDReadyThreeFingersContinueDownStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    bool isMoveValid = false;
+    for (int i = 0; i < POINTER_COUNT_3; i++) {
+        isMoveValid |= IsMoveValid(lastTripleTapEvents_[i], std::make_shared<MMI::PointerEvent>(event));
+        }
+    if (event.GetPointerIds().size() > POINTER_COUNT_3 || !isMoveValid) {
+        TransferState(PASSING_THROUGH);
+        SendCacheEventsToNext();
+    }
+}
+
+void AccessibilityZoomGesture::HandleMenuSlidingStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    if (event.GetPointerId() == 0) {
+        if (!lastDownEvent_) {
+            lastDownEvent_ = std::make_shared<MMI::PointerEvent>(event);
+    }
+        MMI::PointerEvent::PointerItem lastDownItem;
+        lastDownEvent_->GetPointerItem(lastDownEvent_->GetPointerId(), lastDownItem);
+        MMI::PointerEvent::PointerItem currentItem;
+        event.GetPointerItem(event.GetPointerId(), currentItem);
+        int32_t deltaX = currentItem.GetDisplayX() - lastDownItem.GetDisplayX();
+        int32_t deltaY = currentItem.GetDisplayY() - lastDownItem.GetDisplayY();
+        menuManager_->MoveMenuWindow(deltaX, deltaY);
+
+        lastDownEvent_ = std::make_shared<MMI::PointerEvent>(event);
+    }
+}
+
+void AccessibilityZoomGesture::HandleMenuSlidingStateUp(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    if (event.GetPointerId() != 0) {
+        return;
+    }
+    if (menuManager_ != nullptr) {
+        menuManager_->AttachToEdge();
+    }
+    if (event.GetPointerIds().size() > POINTER_COUNT_1) {
+        TransferState(INVALID);
+    } else {
+        TransferState(INIT);
+    }
+}
+
+void AccessibilityZoomGesture::HandleHotAreaSlidingStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    if (event.GetPointerId() == 0) {
+        if (!lastDownEvent_) {
+            lastDownEvent_ = std::make_shared<MMI::PointerEvent>(event);
+    }
+        MMI::PointerEvent::PointerItem lastDownItem;
+        lastDownEvent_->GetPointerItem(lastDownEvent_->GetPointerId(), lastDownItem);
+        MMI::PointerEvent::PointerItem currentItem;
+        event.GetPointerItem(event.GetPointerId(), currentItem);
+        int32_t deltaX = currentItem.GetDisplayX() - lastDownItem.GetDisplayX();
+        int32_t deltaY = currentItem.GetDisplayY() - lastDownItem.GetDisplayY();
+        windowMagnificationManager_->MoveMagnificationWindow(deltaX, deltaY);
+
+        lastDownEvent_ = std::make_shared<MMI::PointerEvent>(event);
+    }
+}
+
+void AccessibilityZoomGesture::HandleHotAreaSlidingStateUp(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    if (event.GetPointerId() != 0) {
+        return;
+    }
+    if (event.GetPointerIds().size() > POINTER_COUNT_1) {
+        TransferState(INVALID);
+    } else {
+        TransferState(INIT);
+    }
+}
+
+void AccessibilityZoomGesture::HandleHoldStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CalcFocusCoordinate(event, lastCenter);
+}
+
+void AccessibilityZoomGesture::HandleHoldStateUp(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    if (event.GetPointerIds().size() == POINTER_COUNT_1) {
+        OffZoom();
+        TransferState(INIT);
+    }
+    CalcFocusCoordinate(event, lastCenter);
+}
+
+void AccessibilityZoomGesture::HandleHoldStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    ZOOM_FOCUS_COORDINATE coordinate = {0.0f, 0.0f};
+    CalcFocusCoordinate(event, coordinate);
+    RecognizeScroll(coordinate);
+}
+
+void AccessibilityZoomGesture::HandleTDZoomInitStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != POINTER_COUNT_1) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+    }
+    MMI::PointerEvent::PointerItem pointerItem;
+    event.GetPointerItem(event.GetPointerId(), pointerItem);
+    if (magnificationMode_ == FULL_SCREEN_MAGNIFICATION) {
+        gestureType_ = fullScreenManager_->CheckTapOnHotArea(pointerItem.GetDisplayX(), pointerItem.GetDisplayY());
+            } else {
+        isTapOnWindowHotArea_ = windowMagnificationManager_->IsTapOnHotArea(pointerItem.GetDisplayX(),
+            pointerItem.GetDisplayY());
+        isTapOnWindow_ = windowMagnificationManager_->IsTapOnMagnificationWindow(pointerItem.GetDisplayX(),
+            pointerItem.GetDisplayY());
+            }
+    isTapOnMenu_ = menuManager_->IsTapOnMenu(pointerItem.GetDisplayX(), pointerItem.GetDisplayY());
+
+    lastDownEvent_ = std::make_shared<MMI::PointerEvent>(event);
+    lastTripleTapEvents_[0] = std::make_shared<MMI::PointerEvent>(event);
+    if (isTapOnWindowHotArea_) {
+        zoomGestureEventHandler_->SendEvent(HOT_AREA_SLIDING_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
+    } else if (isTapOnMenu_) {
+        zoomGestureEventHandler_->SendEvent(MENU_SLIDING_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
+    } else {
+        zoomGestureEventHandler_->SendEvent(WAIT_ANOTHER_FINGER_DOWN_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
+    }
+    TransferState(ONE_FINGER_DOWN);
+}
+
+void AccessibilityZoomGesture::HandleTDZoomOneFingerDownStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    gestureType_ = INVALID_GESTURE_TYPE;
+
+    zoomGestureEventHandler_->RemoveEvent(WAIT_ANOTHER_FINGER_DOWN_MSG);
+    zoomGestureEventHandler_->RemoveEvent(HOT_AREA_SLIDING_MSG);
+    zoomGestureEventHandler_->RemoveEvent(MENU_SLIDING_MSG);
+
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != POINTER_COUNT_2) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+            return;
+        }
+    MMI::PointerEvent::PointerItem pointerItem;
+    event.GetPointerItem(event.GetPointerId(), pointerItem);
+    isTapOnWindow_ = windowMagnificationManager_->IsTapOnMagnificationWindow(pointerItem.GetDisplayX(),
+        pointerItem.GetDisplayY());
+    lastTripleTapEvents_[1] = std::make_shared<MMI::PointerEvent>(event);
+    TransferState(TWO_FINGER_DOWN);
+    if (magnificationMode_ != FULL_SCREEN_MAGNIFICATION && !isTapOnWindow_) {
+        zoomGestureEventHandler_->SendEvent(WAIT_ANOTHER_FINGER_DOWN_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
+        return;
+    } else {
+        zoomGestureEventHandler_->SendEvent(TWO_FINGER_SLIDING_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
+        CalcFocusCoordinate(event, lastCenter);
+        baseDistance_ = lastDistance_ = CalcSeparationDistance(event);
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDZoomOneFingerDownStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    int32_t pId = event.GetPointerId();
+    if (pId > POINTER_ID_2) {
+        TransferState(PASSING_THROUGH);
+        SendCacheEventsToNext();
+        return;
+    }
+    if (!IsMoveValid(lastTripleTapEvents_[pId], std::make_shared<MMI::PointerEvent>(event))) {
+        if (isTapOnWindowHotArea_) {
+            ClearCacheEventsAndMsg();
+            TransferState(HOT_AREA_SLIDING);
+            return;
+        }
+        if (isTapOnMenu_) {
+            ClearCacheEventsAndMsg();
+            TransferState(MENU_SLIDING);
+            return;
+        }
+        TransferState(PASSING_THROUGH);
+        SendCacheEventsToNext();
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDZoomOneFingerDownStateUp(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != 1) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+    }
+    if (menuManager_ != nullptr) {
+        MMI::PointerEvent::PointerItem pointerItem;
+        event.GetPointerItem(event.GetPointerId(), pointerItem);
+        if (menuManager_->IsTapOnMenu(pointerItem.GetDisplayX(), pointerItem.GetDisplayY())) {
+            menuManager_->OnMenuTap();
+            TransferState(INIT);
+            ClearCacheEventsAndMsg();
+        return;
+        }
+    }
+    TransferState(PASSING_THROUGH);
+    SendCacheEventsToNext();
+}
+
+void AccessibilityZoomGesture::HandleTDZoomTwoFingersDownStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    zoomGestureEventHandler_->RemoveEvent(WAIT_ANOTHER_FINGER_DOWN_MSG);
+    zoomGestureEventHandler_->RemoveEvent(TWO_FINGER_SLIDING_MSG);
+
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount != POINTER_COUNT_3) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+    }
+
+    lastTripleTapEvents_[POINTER_COUNT_2] = std::make_shared<MMI::PointerEvent>(event);
+    zoomGestureEventHandler_->SendEvent(MULTI_TAP_MSG, 0, MULTI_TAP_TIMER);
+    TransferState(THREE_FINGER_DOWN);
+}
+
+void AccessibilityZoomGesture::HandleTDZoomTwoFingersDownStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    if (event.GetPointerIds().size() != POINTER_COUNT_2) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+    }
+    int32_t pId = event.GetPointerId();
+    if (pId > POINTER_ID_2 || IsMoveValid(lastTripleTapEvents_[pId], std::make_shared<MMI::PointerEvent>(event))) {
+        return;
+    }
+    zoomGestureEventHandler_->RemoveEvent(WAIT_ANOTHER_FINGER_DOWN_MSG);
+    zoomGestureEventHandler_->RemoveEvent(TWO_FINGER_SLIDING_MSG);
+    if (magnificationMode_ == FULL_SCREEN_MAGNIFICATION || isTapOnWindow_) {
+        ClearCacheEventsAndMsg();
+        TransferState(SLIDING);
+    } else {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+    }
+}
+
+
+void AccessibilityZoomGesture::HandleTDZoomThreeFingersDownStateUp(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    size_t pointerCount = event.GetPointerIds().size();
+    if (pointerCount == POINTER_COUNT_1) {
+        TransferState(THREE_FINGER_TAP);
+    } else if (pointerCount > POINTER_COUNT_3) {
+    SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDZoomThreeFingersDownStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    bool isMoveValid = false;
+    if (event.GetPointerIds().size() > POINTER_COUNT_3) {
+        TransferState(PASSING_THROUGH);
+        SendCacheEventsToNext();
+        return;
+    }
+    for (int i = 0; i < POINTER_COUNT_3; i++) {
+        isMoveValid |= IsMoveValid(lastTripleTapEvents_[i], std::make_shared<MMI::PointerEvent>(event));
+    }
+    if (!isMoveValid) {
+        TransferState(PASSING_THROUGH);
+        SendCacheEventsToNext();
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDZoomThreeFingersTapStateDown(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    zoomGestureEventHandler_->RemoveEvent(WAIT_ANOTHER_FINGER_DOWN_MSG);
+    if (event.GetPointerId() < POINTER_COUNT_3) {
+        lastTripleTapEvents_[event.GetPointerId()] = std::make_shared<MMI::PointerEvent>(event);
+    }
+    uint32_t pointerSize = event.GetPointerIds().size();
+    if (pointerSize < POINTER_COUNT_3) {
+        zoomGestureEventHandler_->SendEvent(WAIT_ANOTHER_FINGER_DOWN_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
+    } else if (pointerSize == POINTER_COUNT_3) {
+        zoomGestureEventHandler_->SendEvent(MULTI_TAP_MSG, 0, MULTI_TAP_TIMER);
+        TransferState(THREE_FINGER_TAP_THEN_DOWN);
+    } else {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDZoomThreeFingersTapStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+
+    int32_t pId = event.GetPointerId();
+    if (pId > POINTER_ID_2) {
+        TransferState(PASSING_THROUGH);
+        SendCacheEventsToNext();
+        return;
+    }
+    if (!IsMoveValid(lastTripleTapEvents_[pId], std::make_shared<MMI::PointerEvent>(event))) {
+        uint32_t pointerSize = event.GetPointerIds().size();
+        if (pointerSize == POINTER_COUNT_2 && (magnificationMode_ == FULL_SCREEN_MAGNIFICATION || isTapOnWindow_)) {
+            ClearCacheEventsAndMsg();
+            TransferState(SLIDING);
+            return;
+        }
+        TransferState(PASSING_THROUGH);
+        SendCacheEventsToNext();
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDZoomThreeFingersContinueDownStateUp(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    zoomGestureEventHandler_->RemoveEvent(LONG_PRESS_MSG);
+
+    uint32_t pointerSize = event.GetPointerIds().size();
+    if (pointerSize == POINTER_COUNT_1) {
+        OffZoom();
+        ClearCacheEventsAndMsg();
+        TransferState(INIT);
+    } else if (pointerSize > POINTER_COUNT_3) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+    }
+}
+
+void AccessibilityZoomGesture::HandleTDZoomThreeFingersContinueDownStateMove(MMI::PointerEvent &event)
+{
+    HILOG_DEBUG();
+    CacheEvents(event);
+    bool isMoveValid = false;
+    for (int i = 0; i < POINTER_COUNT_3; i++) {
+        isMoveValid |= IsMoveValid(lastTripleTapEvents_[i], std::make_shared<MMI::PointerEvent>(event));
+    }
+    if (event.GetPointerIds().size() > POINTER_COUNT_3 || !isMoveValid) {
+        TransferState(PASSING_THROUGH);
+        SendCacheEventsToNext();
+    }
+}
 } // namespace Accessibility
 } // namespace OHOS
