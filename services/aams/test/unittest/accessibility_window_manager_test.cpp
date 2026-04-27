@@ -1046,7 +1046,6 @@ HWTEST_F(AccessibilityWindowManagerTest, AccessibilityWindowManager_Unittest_Set
     AccessibilityWindowInfo info2;
     mgr.activeWindowId_ = ACTIVE_WINDOW_ID;
     int32_t windowId = ANY_WINDOW_ID;
-    
     mgr.a11yWindows_.clear();
     EXPECT_EQ(0, (int)mgr.a11yWindows_.size());
     mgr.a11yWindows_.insert(std::make_pair(ACTIVE_WINDOW_ID, info1));
