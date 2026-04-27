@@ -565,11 +565,6 @@ void WindowMagnificationGesture::HandleZoomInStateOneFingerDownStateUp(MMI::Poin
         SetGestureState(MagnificationGestureState::PASSING_THROUGH, event.GetPointerAction());
         return;
     }
-    if (IsTapOnInputMethod(event)) {
-        SendCacheEventsToNext();
-        SetGestureState(MagnificationGestureState::ZOOMIN_STATE, event.GetPointerAction());
-        return;
-    }
     AddTapCount();
     if (GetTapCount() == TAP_COUNT_THREE) {
         MMI::PointerEvent::PointerItem pointerItem;
@@ -1015,7 +1010,7 @@ bool WindowMagnificationGesture::IsTapOnInputMethod(MMI::PointerEvent &event)
     }
 
     std::vector<AccessibilityWindowInfo> windowInfos =
-        Singleton<ExtendServiceManager>::GetInstance().getAccessibilityWindowsCallback();
+        Singleton<ExtendServiceManager>::GetInstance().getAccessibilityWindowsCallback(event.GetTargetDisplayId());
     for (auto &window : windowInfos) {
         if (window.GetWindowType() != INPUT_METHOD_WINDOW_TYPE) {
             continue;

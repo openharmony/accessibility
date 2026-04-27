@@ -31,16 +31,19 @@
 namespace OHOS {
 namespace Accessibility {
 class TouchEventInjector;
-using SendAccessibilityEventToAACallback = void (*)(EventType eventType, GestureType gestureId);
-using FindFocusedElementCallback = bool (*)(AccessibilityElementInfo &elementInfo, uint32_t timeout);
-using ExecuteActionOnAccessibilityFocusedCallback = bool (*)(const ActionType &action);
-using GetFocusedWindowIdCallback = void (*)(int32_t &focusedWindowId);
-using GetActiveWindowIdCallback = void (*)(int32_t &activeWindowId);
-using GetAccessibilityWindowCallback = bool (*)(int32_t windowId, AccessibilityWindowInfo &window);
-using SendPointerEventForHoverCallback = void (*)(const std::shared_ptr<MMI::PointerEvent>& pointerEvent);
+using SendAccessibilityEventToAACallback = void (*)(EventType eventType, GestureType gestureId, uint64_t displayId);
+using FindFocusedElementCallback = bool (*)(
+    AccessibilityElementInfo &elementInfo, uint32_t timeout, uint64_t displayId);
+using ExecuteActionOnAccessibilityFocusedCallback = bool (*)(const ActionType &action, uint64_t displayId);
+using GetFocusedWindowIdCallback = void (*)(int32_t &focusedWindowId, uint64_t displayId);
+using GetActiveWindowIdCallback = void (*)(int32_t &activeWindowId, uint64_t displayId);
+using GetAccessibilityWindowCallback = bool (*)(int32_t windowId, AccessibilityWindowInfo &window, uint64_t displayId);
+using SendPointerEventForHoverCallback = void (*)(
+    const std::shared_ptr<MMI::PointerEvent> &pointerEvent, uint64_t displayId);
 using GetDelayTime = int64_t(*)();
 using GetMagnificationState = bool(*)();
 using GetMagnificationModeCallback = uint32_t(*)();  // get
+using GetMagnificationTriggerMethodCallback = int32_t(*)();
 using GetMagnificationScaleCallback = float(*)();   // get
 using UpdateInputFilterCallback = void(*)();
 using MagnificationModeCallback = void(*)(int32_t mode);   // set
@@ -48,8 +51,11 @@ using MagnificationTypeCallback = uint32_t(*)();
 using AnnouncedForMagnificationCallback = void(*)(AnnounceType announceType);
 using DispatchKeyEventCallback =  std::vector<int32_t> (*) (MMI::KeyEvent &event, uint32_t sequenceNum);
 using MagnificationScaleCallback = void(*)(float scale);   // set
-using GetAccessibilityWindowsCallback = std::vector<AccessibilityWindowInfo>(*)();   // get
+using GetAccessibilityWindowsCallback = std::vector<AccessibilityWindowInfo>(*)(uint64_t displayId);   // get
 using SubscribeOsAccountCallback = void(*)();
+using CheckDisplayIdCallback = bool(*)(uint64_t displayId);
+using NotifyZoomGesutureConflictDialogCallback = bool(*)();
+using GetNotifyZoomGestureConflictCallback = bool(*)();
 
 class ExtendServiceManager {
     DECLARE_SINGLETON(ExtendServiceManager);
@@ -88,6 +94,7 @@ public:
 
     RetError SetMouseAutoClick(int32_t time);
     void SetServiceOnKeyEventResult(int32_t connectionId, bool isHandled, uint32_t sequenceNum);
+    void OnScreenMagnificationTriggerMethodChanged(int32_t screenMagnificationTriggerMethod);
     void OnScreenMagnificationTypeChanged(uint32_t screenMagnificationType);
     void OnScreenMagnificationStateChanged();
     void UnregisterDisplayListener();
@@ -97,8 +104,10 @@ public:
     std::shared_ptr<FullScreenMagnificationManager> GetFullScreenMagnificationManager();
     std::shared_ptr<MagnificationMenuManager> GetMenuManager();
     void SetMagnificationState(bool state, uint32_t type, uint32_t mode);
+    bool CheckDisplayId(uint64_t displayId);
 
     GetMagnificationModeCallback getMagnificationModeCallback = nullptr;
+    GetMagnificationTriggerMethodCallback getMagnificationTriggerMethodCallback = nullptr;
     GetMagnificationScaleCallback getMagnificationScaleCallback = nullptr;
     UpdateInputFilterCallback updateInputFilterCallback = nullptr;
     MagnificationModeCallback magnificationModeCallback = nullptr;
@@ -107,6 +116,9 @@ public:
     MagnificationScaleCallback magnificationScaleCallback = nullptr;
     GetAccessibilityWindowsCallback getAccessibilityWindowsCallback = nullptr;
     SubscribeOsAccountCallback subscribeOsAccountCallback = nullptr;
+    CheckDisplayIdCallback checkDisplayIdCallback = nullptr;
+    NotifyZoomGesutureConflictDialogCallback notifyZoomGesutureConflictDialogCallback = nullptr;
+    GetNotifyZoomGestureConflictCallback getNotifyZoomGestureConflictCallback = nullptr;
 
     void SetTouchEventInjector(const sptr<TouchEventInjector> &touchEventInjector);
 

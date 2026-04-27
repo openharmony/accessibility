@@ -27,18 +27,20 @@
 namespace OHOS {
 namespace Accessibility {
 MockAccessibleAbilityConnection::MockAccessibleAbilityConnection(int32_t accountId, int32_t connectionId,
-    AccessibilityAbilityInfo& abilityInfo)
-    : AccessibleAbilityConnection(accountId, connectionId, abilityInfo)
+    AccessibilityAbilityInfo& abilityInfo, const wptr<AccessibilityAccountData> &accountData)
+    : AccessibleAbilityConnection(accountId, connectionId, abilityInfo, accountData)
 {
     (void)accountId;
     (void)connectionId;
     (void)abilityInfo;
+    (void)accountData;
 }
 MockAccessibleAbilityConnection::~MockAccessibleAbilityConnection()
 {}
 
-AccessibleAbilityChannel::AccessibleAbilityChannel(const int32_t accountId, const std::string &clientName)
-    : clientName_(clientName), accountId_(accountId)
+AccessibleAbilityChannel::AccessibleAbilityChannel(
+    const int32_t accountId, const std::string &clientName, const wptr<AccessibilityAccountData> &accountData)
+    : clientName_(clientName), accountId_(accountId), accountData_(accountData)
 {
 }
 
@@ -113,7 +115,7 @@ RetError AccessibleAbilityChannel::FocusMoveSearch(const int32_t accessibilityWi
 
 RetError AccessibleAbilityChannel::ExecuteAction(const int32_t accessibilityWindowId, const int64_t elementId,
     const int32_t action, const std::map<std::string, std::string> &actionArguments, const int32_t requestId,
-    const sptr<IAccessibilityElementOperatorCallback>& callback)
+    const sptr<IAccessibilityElementOperatorCallback>& callback, const Rect &rect)
 {
     GTEST_LOG_(INFO) << "MOCK AccessibleAbilityChannel ExecuteAction";
     (void)accessibilityWindowId;
@@ -122,6 +124,7 @@ RetError AccessibleAbilityChannel::ExecuteAction(const int32_t accessibilityWind
     (void)actionArguments;
     (void)requestId;
     (void)callback;
+    (void)rect;
     return RET_OK;
 }
 
@@ -190,7 +193,7 @@ RetError AccessibleAbilityChannel::SendSimulateGesture(
 }
 
 sptr<AccessibleAbilityConnection> AccessibleAbilityChannel::GetConnection(int32_t accountId,
-    const std::string &clientName)
+    const std::string &clientName) const
 {
     sptr<AccessibilityAccountData> accountData =
         Singleton<AccessibleAbilityManagerService>::GetInstance().GetAccountData(accountId);
@@ -202,12 +205,13 @@ sptr<AccessibleAbilityConnection> AccessibleAbilityChannel::GetConnection(int32_
     return accountData->GetAccessibleAbilityConnection(clientName);
 }
 
-AccessibleAbilityConnection::AccessibleAbilityConnection(
-    int32_t accountId, int32_t connectionId, AccessibilityAbilityInfo& abilityInfo)
+AccessibleAbilityConnection::AccessibleAbilityConnection(int32_t accountId, int32_t connectionId,
+    AccessibilityAbilityInfo &abilityInfo, const wptr<AccessibilityAccountData> &accountData)
 {
     accountId_ = accountId;
     connectionId_ = connectionId;
     abilityInfo_ = abilityInfo;
+    accountData_ = accountData;
 }
 
 AccessibleAbilityConnection::~AccessibleAbilityConnection()

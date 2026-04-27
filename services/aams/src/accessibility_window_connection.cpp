@@ -22,26 +22,40 @@ using namespace std;
 
 namespace OHOS {
 namespace Accessibility {
-AccessibilityWindowConnection::AccessibilityWindowConnection(const int32_t windowId,
-    const sptr<IAccessibilityElementOperator> &connection, const int32_t accountId)
+AccessibilityWindowConnection::AccessibilityWindowConnection(const int32_t windowId, const int32_t accountId)
 {
     windowId_ = windowId;
-    proxy_ = connection;
     accountId_ = accountId;
-    cardProxy_.EnsureInsert(0, connection);
 }
 
 AccessibilityWindowConnection::AccessibilityWindowConnection(const int32_t windowId, const int32_t treeId,
-    const sptr<IAccessibilityElementOperator> &connection, const int32_t accountId)
+    const sptr<IAccessibilityElementOperator> &elementOperator, const int32_t accountId)
 {
     windowId_ = windowId;
     treeId_ = treeId;
     accountId_ = accountId;
-    cardProxy_.EnsureInsert(treeId, connection);
+    cardProxy_.EnsureInsert(treeId, elementOperator);
 }
 
 AccessibilityWindowConnection::~AccessibilityWindowConnection()
 {
+}
+
+sptr<IAccessibilityElementOperator> AccessibilityWindowConnection::GetProxy(uint64_t displayId)
+{
+    std::lock_guard<ffrt::mutex> lock(proxyMutex_);
+    if (windowId_ != SCENE_BOARD_WINDOW_ID) {
+        displayId = 0;
+    }
+    if (isUseBrokerProxy_) {
+        return brokerProxy_;
+    } else {
+        auto iter = proxyMap_.find(displayId);
+        if (iter != proxyMap_.end()) {
+            return iter->second.first;
+        }
+        return nullptr;
+    }
 }
 
 RetError AccessibilityWindowConnection::SetCardProxy(const int32_t treeId,
@@ -67,7 +81,11 @@ RetError AccessibilityWindowConnection::SetTokenIdMap(const int32_t treeId,
     const uint32_t tokenId)
 {
     HILOG_DEBUG("treeId : %{public}d", treeId);
-    tokenIdMap_.EnsureInsert(treeId, tokenId);
+    if (windowId_ != SCENE_BOARD_WINDOW_ID) {
+        tokenIdMap_.EnsureInsert(treeId, tokenId);
+    } else {
+        scbTokenMap_.insert(tokenId);
+    }
     return RET_OK;
 }
 
@@ -75,6 +93,11 @@ uint32_t AccessibilityWindowConnection::GetTokenIdMap(const int32_t treeId)
 {
     HILOG_DEBUG("treeId : %{public}d", treeId);
     return tokenIdMap_.ReadVal(treeId);
+}
+
+bool AccessibilityWindowConnection::CheckScbTokenIdMap(uint32_t tokenId)
+{
+    return scbTokenMap_.count(tokenId) != 0;
 }
 
 void AccessibilityWindowConnection::GetAllTreeId(std::vector<int32_t> &treeIds)
@@ -106,14 +129,24 @@ void AccessibilityWindowConnection::EraseProxy(const int32_t treeId)
     }
 }
 
-void AccessibilityWindowConnection::AddDeathRecipient(int32_t windowId, int32_t accountId, bool isBroker)
+void AccessibilityWindowConnection::SetProxy(uint64_t displayId, sptr<IAccessibilityElementOperator> proxy)
 {
-    sptr<IAccessibilityElementOperator> elementOperator = isBroker ? brokerProxy_ : proxy_;
+    AddDeathRecipient(proxy, false, displayId);
+}
+ 
+void AccessibilityWindowConnection::SetBrokerProxy(sptr<IAccessibilityElementOperator> proxy)
+{
+    AddDeathRecipient(proxy, true, 0);
+}
+
+void AccessibilityWindowConnection::AddDeathRecipient(
+    sptr<IAccessibilityElementOperator> elementOperator, bool isBroker, uint64_t displayId)
+{
     if (!elementOperator || !elementOperator->AsObject()) {
         return;
     }
     sptr<IRemoteObject::DeathRecipient> deathRecipient =
-        new(std::nothrow) InteractionOperationDeathRecipient(windowId, accountId);
+        new(std::nothrow) InteractionOperationDeathRecipient(windowId_, accountId_, displayId);
     if (!deathRecipient) {
         Utils::RecordUnavailableEvent(A11yUnavailableEvent::CONNECT_EVENT,
             A11yError::ERROR_CONNECT_TARGET_APPLICATION_FAILED);
@@ -122,9 +155,10 @@ void AccessibilityWindowConnection::AddDeathRecipient(int32_t windowId, int32_t 
     }
     if (elementOperator->AsObject()->AddDeathRecipient(deathRecipient)) {
         if (isBroker) {
+            brokerProxy_ = elementOperator;
             brokerProxyDeathRecipient_ = deathRecipient;
         } else {
-            proxyDeathRecipient_ = deathRecipient;
+            proxyMap_.insert({displayId, {elementOperator, deathRecipient}});
         }
     }
 }
@@ -132,12 +166,11 @@ void AccessibilityWindowConnection::AddDeathRecipient(int32_t windowId, int32_t 
 void AccessibilityWindowConnection::ResetProxy()
 {
     std::lock_guard<ffrt::mutex> lock(proxyMutex_);
-    if (proxy_ && proxy_->AsObject() && proxyDeathRecipient_) {
-        proxy_->AsObject()->RemoveDeathRecipient(proxyDeathRecipient_);
+    for (const auto &[displayId, value] : proxyMap_) {
+        if (value.first && value.first->AsObject() && value.second) {
+            value.first->AsObject()->RemoveDeathRecipient(value.second);
+        }
     }
-    proxy_ = nullptr;
-    EraseProxy(0);
-    RemoveTreeDeathRecipient(0);
 }
  
 void AccessibilityWindowConnection::ResetBrokerProxy()
@@ -148,15 +181,16 @@ void AccessibilityWindowConnection::ResetBrokerProxy()
     }
     brokerProxy_ = nullptr;
 }
- 
-void AccessibilityWindowConnection::AddTreeDeathRecipient(int32_t windowId, int32_t accountId, int32_t treeId)
+
+void AccessibilityWindowConnection::AddTreeDeathRecipient(
+    int32_t windowId, int32_t accountId, int32_t treeId, uint64_t displayId)
 {
     sptr<IAccessibilityElementOperator> elementOperator = GetCardProxy(treeId);
     if (!elementOperator || !elementOperator->AsObject()) {
         return;
     }
     sptr<IRemoteObject::DeathRecipient> deathRecipient =
-        new(std::nothrow) InteractionOperationDeathRecipient(windowId, treeId, accountId);
+        new(std::nothrow) InteractionOperationDeathRecipient(windowId, treeId, accountId, displayId);
     if (!deathRecipient) {
         Utils::RecordUnavailableEvent(A11yUnavailableEvent::CONNECT_EVENT,
             A11yError::ERROR_CONNECT_TARGET_APPLICATION_FAILED);
@@ -187,23 +221,32 @@ void AccessibilityWindowConnection::InteractionOperationDeathRecipient::OnRemote
     Utils::RecordUnavailableEvent(A11yUnavailableEvent::CONNECT_EVENT,
         A11yError::ERROR_TARGET_APPLICATION_DISCONNECT_ABNORMALLY);
     HILOG_INFO();
-    sptr<AccessibilityAccountData> accountData =
-        Singleton<AccessibleAbilityManagerService>::GetInstance().GetCurrentAccountData();
-    if (accountData == nullptr) {
-        HILOG_ERROR("get accountData failed");
-        return;
-    }
-    int32_t currentAccountId = accountData->GetAccountId();
-    if (currentAccountId != accountId_) {
-        HILOG_ERROR("check accountId failed");
-        return;
-    }
- 
     if (treeId_ > 0) {
         Singleton<AccessibleAbilityManagerService>::GetInstance().InnerDeregisterElementOperatorByWindowIdAndTreeId(
-            windowId_, treeId_);
+            windowId_, treeId_, accountId_, displayId_);
     } else {
-        Singleton<AccessibleAbilityManagerService>::GetInstance().InnerDeregisterElementOperatorByWindowId(windowId_);
+        Singleton<AccessibleAbilityManagerService>::GetInstance().InnerDeregisterElementOperatorByWindowId(
+            windowId_, accountId_, displayId_);
+    }
+}
+
+void AccessibilityWindowConnection::ClearFocus()
+{
+    std::lock_guard<ffrt::mutex> lock(proxyMutex_);
+    for (const auto& [displayId, value] : proxyMap_) {
+        if (value.first) {
+            value.first->ClearFocus();
+        }
+    }
+}
+ 
+void AccessibilityWindowConnection::OutsideTouch()
+{
+    std::lock_guard<ffrt::mutex> lock(proxyMutex_);
+    for (const auto& [displayId, value] : proxyMap_) {
+        if (value.first) {
+            value.first->OutsideTouch();
+        }
     }
 }
 } // namespace Accessibility

@@ -83,7 +83,7 @@ void AamsAccessibleAbilityChannelTest::TearDown()
 
     Singleton<AccessibleAbilityManagerService>::GetInstance().GetCurrentAccountData()->OnAccountSwitched();
     // Deregister ElementOperator
-    Singleton<AccessibleAbilityManagerService>::GetInstance().DeregisterElementOperatorByWindowId(0);
+    Singleton<AccessibleAbilityManagerService>::GetInstance().DeregisterElementOperatorByWindowId(0, 0);
     bool ret = AccessibilityCommonHelper::GetInstance().WaitForLoop(std::bind([=]() -> bool {
         auto &aams = Singleton<AccessibleAbilityManagerService>::GetInstance();
         if (aams.GetMainRunner()->GetEventQueue()->IsIdle()) {
@@ -135,9 +135,9 @@ void AamsAccessibleAbilityChannelTest::AddAccessibleAbilityConnection(bool isNoC
     abilityInfo->SetCapabilityValues(capabilities);
     accountData_ = Singleton<AccessibleAbilityManagerService>::GetInstance().GetCurrentAccountData();
     accountData_->Init();
-    AAConnection_ = new AccessibleAbilityConnection(accountData_->GetAccountId(), 0, *abilityInfo);
+    AAConnection_ = new AccessibleAbilityConnection(accountData_->GetAccountId(), 0, *abilityInfo, accountData_);
     elementName_ = new AppExecFwk::ElementName(deviceId, initParams.bundleName, initParams.name);
-    aastub_ = new AccessibleAbilityChannel(accountData_->GetAccountId(), abilityInfo->GetId());
+    aastub_ = new AccessibleAbilityChannel(accountData_->GetAccountId(), abilityInfo->GetId(), accountData_);
     AAConnection_->OnAbilityConnectDoneSync(*elementName_, aastub_);
     accountData_->AddInstalledAbility(*abilityInfo);
     sleep(1);
@@ -154,7 +154,7 @@ void AamsAccessibleAbilityChannelTest::AddAccessibilityWindowConnection()
         new MockAccessibilityElementOperatorImpl(windowId, nullptr, *mockCallback);
     sptr<MockAccessibilityElementOperatorProxy> proxy = new MockAccessibilityElementOperatorProxy(stub);
     proxy_ = proxy;
-    Singleton<AccessibleAbilityManagerService>::GetInstance().RegisterElementOperatorByWindowId(windowId, proxy);
+    Singleton<AccessibleAbilityManagerService>::GetInstance().RegisterElementOperatorByWindowId(windowId, proxy, 0);
     bool ret = AccessibilityCommonHelper::GetInstance().WaitForLoop(std::bind([=]() -> bool {
         auto &aams = Singleton<AccessibleAbilityManagerService>::GetInstance();
         if (aams.GetMainRunner()->GetEventQueue()->IsIdle()) {
@@ -418,7 +418,7 @@ HWTEST_F(AamsAccessibleAbilityChannelTest, AccessibleAbilityChannel_ModuleTest_E
 
     ASSERT_TRUE(AccessibilityHelper::GetInstance().GetTestStub());
     RetError result =
-        AccessibilityHelper::GetInstance().GetTestStub()->ExecuteAction(0, 4, 3, actionArguments, 0, nullptr);
+        AccessibilityHelper::GetInstance().GetTestStub()->ExecuteAction(0, 4, 3, actionArguments, 0, nullptr, Rect());
     sleep(2);
     GTEST_LOG_(INFO) << "Test result";
     EXPECT_EQ(-1, proxy_->testChannelElementId_);
@@ -446,7 +446,7 @@ HWTEST_F(AamsAccessibleAbilityChannelTest, AccessibleAbilityChannel_ModuleTest_E
 
     ASSERT_TRUE(AccessibilityHelper::GetInstance().GetTestStub());
     RetError result = AccessibilityHelper::GetInstance().GetTestStub()->ExecuteAction(
-        ACTIVE_WINDOW_ID, 4, 3, actionArguments, 0, nullptr);
+        ACTIVE_WINDOW_ID, 4, 3, actionArguments, 0, nullptr, Rect());
     sleep(2);
     GTEST_LOG_(INFO) << "Test result";
     EXPECT_EQ(-1, proxy_->testChannelElementId_);
@@ -624,7 +624,7 @@ HWTEST_F(AamsAccessibleAbilityChannelTest, AccessibleAbilityChannel_ModuleTest_E
 
     ASSERT_TRUE(AccessibilityHelper::GetInstance().GetTestStub());
     RetError result =
-        AccessibilityHelper::GetInstance().GetTestStub()->ExecuteAction(0, 4, 3, actionArguments, 0, nullptr);
+        AccessibilityHelper::GetInstance().GetTestStub()->ExecuteAction(0, 4, 3, actionArguments, 0, nullptr, Rect());
     sleep(2);
     GTEST_LOG_(INFO) << "Test result";
     EXPECT_EQ(-1, proxy_->testChannelElementId_);
