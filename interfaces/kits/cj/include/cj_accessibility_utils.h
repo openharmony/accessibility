@@ -147,6 +147,7 @@ CArrString GetCapabilityStr(uint32_t capabilities, RetError &errCode);
 CArrString GetEventTypeStr(uint32_t eventType, RetError &errCode);
 
 void FreecAbility(CAccessibilityAbilityInfo *cAbility);
+void FreeCEventInfo(CEventInfo &cEventInfo);
 // func
 CAccessibilityAbilityInfo ConvertAccAbilityInfo2C(AccessibilityAbilityInfo &abilityInfo, RetError &errCode);
 CArrAccessibilityAbilityInfo ConvertArrAccAbilityInfo2CArr(std::vector<AccessibilityAbilityInfo> &abilityList,
