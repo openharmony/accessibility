@@ -20,6 +20,7 @@
 #include <vector>
 #include <future>
 #include <chrono>
+#include <atomic>
 
 #include "accessibility_element_info.h"
 #include "accessibility_element_operator_callback_stub.h"
@@ -58,6 +59,7 @@ public:
         const int32_t requestId) override;
 
     ffrt::promise<void> promise_;
+    std::atomic<bool> promiseSet_ {false};
     bool executeActionResult_ = false;
     AccessibilityElementInfo accessibilityInfoResult_ = {};
     std::vector<AccessibilityElementInfo> elementInfosResult_;
@@ -72,6 +74,7 @@ public:
     OperateVirtualNodeResult operateVirtualNodeResult_ = OperateVirtualNodeResult::VIRTUAL_NODE_NOT_SUPPORT;
 
     bool ValidateElementInfos(const std::list<AccessibilityElementInfo>& infos);
+    void SetPromiseValue();
 };
 
 } // namespace Accessibility

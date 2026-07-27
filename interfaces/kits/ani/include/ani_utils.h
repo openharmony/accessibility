@@ -93,7 +93,7 @@ public:
     static bool SetLongPropertyRef(ani_env *env, ani_object &object, const std::string &propName, int64_t propValue);
     static ani_object CreateObject(ani_env *env, ani_class cls, ...);
     static bool ConvertStringToInt64(std::string &str, int64_t &value);
-    static void CheckNumber(ani_env *env, std::string value);
+    static bool CheckNumber(ani_env *env, std::string value);
     static void SetScrollTypeParam(ani_env *env, ani_object obj, std::map<std::string, std::string>& args);
     static void SetSelectionParam(ani_env *env, ani_object obj, std::map<std::string, std::string>& args);
     static void SetAccessibilityFocusSceneParam(ani_env *env, ani_object obj, std::map<std::string, std::string>& args);

@@ -2020,8 +2020,12 @@ void StateListenerImpl::SubscribeObserver(napi_env env, napi_value observer, boo
         }
     }
 
-    napi_ref ref;
-    napi_create_reference(env, observer, 1, &ref);
+    napi_ref ref = nullptr;
+    napi_status refStatus = napi_create_reference(env, observer, 1, &ref);
+    if (refStatus != napi_ok || ref == nullptr) {
+        HILOG_ERROR("napi_create_reference failed in SubscribeObserver");
+        return;
+    }
     std::shared_ptr<StateListener> stateListener = std::make_shared<StateListener>(env, ref, isBoolObserver);
 
     observers_.emplace_back(stateListener);
@@ -2073,6 +2077,12 @@ napi_value NAccessibilityClient::SubscribeSelfSeniorMode(napi_env env, napi_call
 
     if (argc < ARGS_SIZE_ONE) {
         HILOG_ERROR("SubscribeSelfSeniorMode argc is invalid: %{public}zu", argc);
+        napi_value err = CreateBusinessError(env, OHOS::Accessibility::RET_ERR_INVALID_PARAM);
+        napi_throw(env, err);
+        return nullptr;
+    }
+    if (!CheckJsFunction(env, args[PARAM0])) {
+        HILOG_ERROR("SubscribeSelfSeniorMode argument is not a function");
         napi_value err = CreateBusinessError(env, OHOS::Accessibility::RET_ERR_INVALID_PARAM);
         napi_throw(env, err);
         return nullptr;

@@ -32,10 +32,24 @@ const std::string FULL_VALUE = "1";
 
 std::string ANIUtils::ANIStringToStdString(ani_env *env, ani_string ani_str)
 {
+    if (ani_str == nullptr) {
+        HILOG_ERROR("ani_str is nullptr");
+        return "";
+    }
+    ani_size strSize = 0;
+    if (env->String_GetUTF8Size(ani_str, &strSize) != ANI_OK) {
+        HILOG_ERROR("String_GetUTF8Size failed");
+        return "";
+    }
+
     ani_size strSize;
     env->String_GetUTF8Size(ani_str, &strSize);
    
     std::vector<char> buffer(strSize + 1); // +1 for null terminator
+    if (env->String_GetUTF8(ani_str, utf8_buffer, strSize + 1, &bytes_written) != ANI_OK) {
+        HILOG_ERROR("String_GetUTF8 failed");
+        return "";
+    }
     char* utf8_buffer = buffer.data();
 
     ani_size bytes_written = 0;
@@ -1282,7 +1296,7 @@ bool ANIUtils::ConvertStringToInt64(std::string &str, int64_t &value)
     return errCode == std::errc{} && ptr == str.data() + str.size();
 }
 
-void ANIUtils::CheckNumber(ani_env *env, std::string value)
+bool ANIUtils::CheckNumber(ani_env *env, std::string value)
 {
     int num;
     std::stringstream streamStr;
@@ -1290,7 +1304,9 @@ void ANIUtils::CheckNumber(ani_env *env, std::string value)
     if (!(streamStr >> num)) {
         HILOG_ERROR("check number failed!");
         ThrowBusinessError(env, QueryRetMsg(RetError::RET_ERR_INVALID_PARAM));
+        return false;
     }
+    return true;
 }
 
 void ANIUtils::SetScrollTypeParam(ani_env *env, ani_object obj, std::map<std::string, std::string>& args)
@@ -1320,12 +1336,16 @@ void ANIUtils::SetSelectionParam(ani_env *env, ani_object obj, std::map<std::str
     std::string str = "";
     if (env->Object_GetFieldByName_Ref(obj, "selectTextBegin", &fiedNameValue) == ANI_OK) {
         str = ANIStringToStdString(env, static_cast<ani_string>(fiedNameValue));
-        CheckNumber(env, str);
+        if (!CheckNumber(env, str)) {
+            return;
+        }
         args.insert(std::pair<std::string, std::string>("selectTextBegin", str.c_str()));
     }
     if (env->Object_GetFieldByName_Ref(obj, "selectTextEnd", &fiedNameValue) == ANI_OK) {
         str = ANIStringToStdString(env, static_cast<ani_string>(fiedNameValue));
-        CheckNumber(env, str);
+        if (!CheckNumber(env, str)) {
+            return;
+        }
         args.insert(std::pair<std::string, std::string>("selectTextEnd", str.c_str()));
     }
     if (env->Object_GetFieldByName_Boolean(obj, "selectTextInForWard", &forWard) == ANI_OK) {
@@ -1383,7 +1403,9 @@ void ANIUtils::ConvertActionArgsJSToANI(ani_env *env, ani_object obj,
         case ActionType::ACCESSIBILITY_ACTION_SET_CURSOR_POSITION:
             if (env->Object_GetFieldByName_Ref(obj, "offset", &fiedNameValue) == ANI_OK) {
                 str = ANIStringToStdString(env, static_cast<ani_string>(fiedNameValue));
-                CheckNumber(env, str);
+                if (!CheckNumber(env, str)) {
+                    return;
+                }
                 args.insert(std::pair<std::string, std::string>("offset", str.c_str()));
             }
             break;
@@ -1396,7 +1418,9 @@ void ANIUtils::ConvertActionArgsJSToANI(ani_env *env, ani_object obj,
         case ActionType::ACCESSIBILITY_ACTION_SPAN_CLICK:
             if (env->Object_GetFieldByName_Ref(obj, "spanId", &fiedNameValue) == ANI_OK) {
                 str = ANIStringToStdString(env, static_cast<ani_string>(fiedNameValue));
-                CheckNumber(env, str);
+                if (!CheckNumber(env, str)) {
+                    return;
+                }
                 args.insert(std::pair<std::string, std::string>("spanId", str.c_str()));
             }
             break;

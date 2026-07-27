@@ -666,6 +666,7 @@ void ANIAccessibilityConfig::SetSyncboolean(ani_env *env, ani_object object, ani
     }
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return;
     }
     HILOG_INFO("SetSyncboolean configId = %{public}d, ret = %{public}d", configId, static_cast<int32_t>(ret));
     return;
@@ -707,6 +708,7 @@ ani_boolean ANIAccessibilityConfig::GetSyncboolean(ani_env *env, ani_object obje
 
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return ANI_FALSE;
     }
     HILOG_INFO("GetSyncboolean configId = %{public}d, ret = %{public}d", configId, static_cast<int32_t>(ret));
     return static_cast<ani_boolean>(state);
@@ -730,6 +732,7 @@ void ANIAccessibilityConfig::SetSyncDouble(ani_env *env, ani_object object, ani_
 
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return;
     }
     HILOG_INFO("SetSyncDouble configId = %{public}d, ret = %{public}d", configId, static_cast<int32_t>(ret));
     return;
@@ -755,6 +758,7 @@ ani_double ANIAccessibilityConfig::GetSyncDouble(ani_env *env, ani_object object
     HILOG_INFO("getSyncNumber configId = %{public}d, ret = %{public}d", configId, static_cast<int32_t>(ret));
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return 0.0;
     }
 
     return static_cast<ani_double>(floatData);
@@ -777,6 +781,7 @@ void ANIAccessibilityConfig::SetSyncInt(ani_env *env, ani_object object, ani_enu
     }
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return;
     }
     HILOG_INFO("SetSyncInt configId = %{public}d, ret = %{public}d", configId, static_cast<int32_t>(ret));
     return;
@@ -805,6 +810,7 @@ ani_int ANIAccessibilityConfig::GetSyncInt(ani_env *env, ani_object object, ani_
     HILOG_INFO("getSyncNumber configId = %{public}d, ret = %{public}d", configId, static_cast<int32_t>(ret));
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return 0;
     }
 
     return static_cast<ani_int>(int32Data);
@@ -818,6 +824,7 @@ void ANIAccessibilityConfig::SetSyncString(ani_env *env, ani_object object, ani_
     auto ret = instance.SetShortkeyTarget(nameStr);
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return;
     }
     HILOG_INFO("Set shortkey target ret = %{public}d", static_cast<int32_t>(ret));
     return;
@@ -833,6 +840,7 @@ ani_string ANIAccessibilityConfig::GetSyncString(ani_env *env, ani_object object
     if (ret != RET_OK) {
         HILOG_ERROR("GetSyncString failed! ret = %{public}d", static_cast<int32_t>(ret));
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return nullptr;
     }
     env->String_NewUTF8(result.c_str(), result.size(), &retResult);
     return retResult;
@@ -850,6 +858,7 @@ void ANIAccessibilityConfig::SetSyncVectorString(ani_env *env, ani_object object
     auto ret = instance.SetShortkeyMultiTarget(valueList);
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return;
     }
     HILOG_INFO("Set shortkey multi-target ret = %{public}d", static_cast<int32_t>(ret));
     return;
@@ -865,6 +874,7 @@ ani_object ANIAccessibilityConfig::GetSyncVectorString(ani_env *env, ani_object 
     if (ret != RET_OK) {
         HILOG_ERROR("GetSyncVecotorString failed! ret = %{public}d", static_cast<int32_t>(ret));
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return nullptr;
     }
 
     return ANIUtils::CreateArray(env, multiList);
@@ -880,6 +890,7 @@ void ANIAccessibilityConfig::SetSyncDaltonizationColorFilter(ani_env *env, ani_o
     auto ret = instance.SetDaltonizationColorFilter(filter);
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return;
     }
     HILOG_INFO("SetSyncDaltonizationColorFilter ret = %{public}d", static_cast<int32_t>(ret));
     return;
@@ -895,6 +906,7 @@ ani_string ANIAccessibilityConfig::GetSyncDaltonizationColorFilter(ani_env *env,
     if (ret != RET_OK) {
         HILOG_ERROR("GetSyncDaltonizationColorFilter failed! ret = %{public}d", static_cast<int32_t>(ret));
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return nullptr;
     }
     std::string result = ConvertDaltonizationTypeToString(type);
     env->String_NewUTF8(result.c_str(), result.size(), &retResult);
@@ -911,6 +923,7 @@ void ANIAccessibilityConfig::SetSyncClickResponseTime(ani_env *env, ani_object o
     auto ret = instance.SetClickResponseTime(time);
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return;
     }
     HILOG_INFO("SetSyncClickResponseTime ret = %{public}d", static_cast<int32_t>(ret));
     return;
@@ -927,6 +940,7 @@ ani_string ANIAccessibilityConfig::GetSyncClickResponseTime(ani_env *env, ani_ob
     if (ret != RET_OK) {
         HILOG_ERROR("GetSyncClickResponseTimer failed! ret = %{public}d", static_cast<int32_t>(ret));
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return nullptr;
     }
     std::string result = ConvertClickResponseTimeTypeToString(time);
     env->String_NewUTF8(result.c_str(), result.size(), &retResult);
@@ -943,6 +957,7 @@ void ANIAccessibilityConfig::SetSyncRepeatClickInterval(ani_env *env, ani_object
     auto ret = instance.SetIgnoreRepeatClickTime(time);
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return;
     }
     HILOG_INFO("SetSyncRepeatClickInterval ret = %{public}d", static_cast<int32_t>(ret));
     return;
@@ -959,6 +974,7 @@ ani_string ANIAccessibilityConfig::GetSyncRepeatClickInterval(ani_env *env, ani_
     if (ret != RET_OK) {
         HILOG_ERROR("GetSyncRepeatClickInterval failed! ret = %{public}d", static_cast<int32_t>(ret));
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return nullptr;
     }
     std::string result = ConvertIgnoreRepeatClickTimeTypeToString(time);
     env->String_NewUTF8(result.c_str(), result.size(), &retResult);
@@ -1014,6 +1030,7 @@ void ANIAccessibilityConfig::SetSyncCaptionsStyle(ani_env *env, ani_object objec
     }
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return;
     }
     HILOG_INFO("SetSyncCaptionsStyle ret = %{public}d", static_cast<int32_t>(ret));
     return;
@@ -1090,6 +1107,7 @@ ani_object ANIAccessibilityConfig::GetSyncCaptionsStyle(ani_env *env, ani_object
     if (ret != RET_OK) {
         HILOG_ERROR("GetSyncCaptionsStyle failed! ret = %{public}d", static_cast<int32_t>(ret));
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return nullptr;
     }
 
     return CreateJsAccessibilityCaptionProperty(env, captionProperty);
@@ -1126,6 +1144,7 @@ void ANIAccessibilityConfig::EnableAbilitySync(ani_env *env, ani_string name, an
     auto ret = instance.EnableAbility(nameStr, ParseCapabilitiesFromVec(strings), false);
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return;
     }
     HILOG_INFO("EnableAbilitySync ret = %{public}d", static_cast<int32_t>(ret));
     return;
@@ -1184,6 +1203,7 @@ void ANIAccessibilityConfig::DisableAbilitySync(ani_env *env, ani_string name)
     auto ret = instance.DisableAbility(nameStr);
     if (ret != RET_OK) {
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return;
     }
     HILOG_INFO("DisableAbilitySync ret = %{public}d", static_cast<int32_t>(ret));
     return;
@@ -1292,6 +1312,7 @@ void ANIAccessibilityConfig::SetMagnificationState(ani_env *env, ani_boolean sta
     if (ret != RET_OK) {
         HILOG_ERROR("SetMagnificationState failed, ret = %{public}d", static_cast<int32_t>(ret));
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return;
     }
 }
 
@@ -1483,9 +1504,24 @@ void ANIAccessibilityConfig::OffSeniorModeStateChangeForApps(ani_env *env)
 ani_boolean ANIAccessibilityConfig::GetSeniorModeStateForApp(ani_env *env, ani_string bundleName, ani_int appIndex)
 {
     HILOG_INFO("getSeniorModeStateForApp");
+    if (bundleName == nullptr) {
+        HILOG_ERROR("bundleName is nullptr");
+        ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(RetError::RET_ERR_INVALID_PARAM));
+        return static_cast<ani_boolean>(false);
+    }
     bool state = false;
     std::string bundleNameStr = ANIUtils::ANIStringToStdString(env, bundleName);
+    if (bundleNameStr.empty()) {
+        HILOG_ERROR("bundleName is empty");
+        ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(RetError::RET_ERR_INVALID_PARAM));
+        return static_cast<ani_boolean>(false);
+    }
     int32_t appIndexInt = static_cast<int32_t>(appIndex);
+    if (appIndexInt < 0) {
+        HILOG_ERROR("appIndex is invalid: %{public}d", appIndexInt);
+        ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(RetError::RET_ERR_INVALID_PARAM));
+        return static_cast<ani_boolean>(false);
+    }
     auto &instance = OHOS::AccessibilityConfig::AccessibilityConfig::GetInstance();
     OHOS::Accessibility::RetError ret = instance.GetSeniorModeStateForApp(bundleNameStr, appIndexInt, state);
     if (ret != OHOS::Accessibility::RET_OK) {
@@ -1549,6 +1585,7 @@ void ANIAccessibilityConfig::SetSeniorModeStateForApp(ani_env *env, ani_array se
     if (ret != OHOS::Accessibility::RET_OK) {
         HILOG_ERROR("SetSeniorModeStateForApp failed: %{public}d", ret);
         ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(ret));
+        return;
     }
 }
 
