@@ -42,18 +42,14 @@ std::string ANIUtils::ANIStringToStdString(ani_env *env, ani_string ani_str)
         return "";
     }
 
-    ani_size strSize;
-    env->String_GetUTF8Size(ani_str, &strSize);
-   
     std::vector<char> buffer(strSize + 1); // +1 for null terminator
+    char* utf8_buffer = buffer.data();
+
+    ani_size bytes_written = 0;
     if (env->String_GetUTF8(ani_str, utf8_buffer, strSize + 1, &bytes_written) != ANI_OK) {
         HILOG_ERROR("String_GetUTF8 failed");
         return "";
     }
-    char* utf8_buffer = buffer.data();
-
-    ani_size bytes_written = 0;
-    env->String_GetUTF8(ani_str, utf8_buffer, strSize + 1, &bytes_written);
     
     utf8_buffer[bytes_written] = '\0';
     std::string content = std::string(utf8_buffer);
