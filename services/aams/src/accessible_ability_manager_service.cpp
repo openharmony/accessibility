@@ -560,6 +560,10 @@ void AccessibleAbilityManagerService::SendTouchGuideGestureToAA(uint64_t display
 ErrCode AccessibleAbilityManagerService::SendEvent(
     const AccessibilityEventInfoParcel &eventInfoParcel, int32_t flag)
 {
+    if (flag < 0 || flag > 1) {
+        HILOG_ERROR("Invalid flag: %{public}d", flag);
+        return RET_ERR_INVALID_PARAM;
+    }
     return InnerSendEvent(eventInfoParcel, flag, InnerGetCallingUid());
 }
 
@@ -1088,7 +1092,7 @@ bool AccessibleAbilityManagerService::CheckPermission(const std::string &permiss
 
 ErrCode AccessibleAbilityManagerService::GetCaptionProperty(CaptionPropertyParcel &caption, bool isPermissionRequired)
 {
-    if (isPermissionRequired && !IsSystemApp()) {
+    if (!IsSystemApp()) {
         HILOG_WARN("Not system app");
         return RET_ERR_NOT_SYSTEM_APP;
     }
@@ -1098,11 +1102,11 @@ ErrCode AccessibleAbilityManagerService::GetCaptionProperty(CaptionPropertyParce
 ErrCode AccessibleAbilityManagerService::SetCaptionProperty(const CaptionPropertyParcel &caption,
     bool isPermissionRequired)
 {
-    if (isPermissionRequired && !IsSystemApp()) {
+    if (!IsSystemApp()) {
         HILOG_WARN("Not system app");
         return RET_ERR_NOT_SYSTEM_APP;
     }
-    if (isPermissionRequired && !CheckPermission(OHOS_PERMISSION_WRITE_ACCESSIBILITY_CONFIG)) {
+    if (!CheckPermission(OHOS_PERMISSION_WRITE_ACCESSIBILITY_CONFIG)) {
         HILOG_WARN("SetCaptionProperty permission denied.");
         return RET_ERR_NO_PERMISSION;
     }
@@ -1111,11 +1115,11 @@ ErrCode AccessibleAbilityManagerService::SetCaptionProperty(const CaptionPropert
 
 ErrCode AccessibleAbilityManagerService::SetCaptionState(const bool state, bool isPermissionRequired)
 {
-    if (isPermissionRequired && !IsSystemApp()) {
+    if (!IsSystemApp()) {
         HILOG_WARN("Not system app");
         return RET_ERR_NOT_SYSTEM_APP;
     }
-    if (isPermissionRequired && !CheckPermission(OHOS_PERMISSION_WRITE_ACCESSIBILITY_CONFIG)) {
+    if (!CheckPermission(OHOS_PERMISSION_WRITE_ACCESSIBILITY_CONFIG)) {
         HILOG_WARN("SetCaptionProperty permission denied.");
         return RET_ERR_NO_PERMISSION;
     }
@@ -1124,7 +1128,7 @@ ErrCode AccessibleAbilityManagerService::SetCaptionState(const bool state, bool 
 
 ErrCode AccessibleAbilityManagerService::GetCaptionState(bool &state, bool isPermissionRequired)
 {
-    if (isPermissionRequired && !IsSystemApp()) {
+    if (!IsSystemApp()) {
         HILOG_WARN("Not system app");
         return RET_ERR_NOT_SYSTEM_APP;
     }
