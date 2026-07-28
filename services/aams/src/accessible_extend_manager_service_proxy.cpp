@@ -439,530 +439,692 @@ bool ExtendManagerServiceProxy::SetDispatchKeyEventCallback()
 
 RetError ExtendManagerServiceProxy::InjectEvents(const std::shared_ptr<AccessibilityGestureInjectPath>& gesturePath)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using InjectEvents = RetError(*)(const std::shared_ptr<AccessibilityGestureInjectPath>& gesturePath);
     static InjectEvents func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return RET_ERR_NULLPTR;
-    }
-    if (!func || readyFunc_.find(ExtMethod::INJECT_EVENTS) == readyFunc_.end()) {
-        func = (InjectEvents)GetFunc("InjectEvents");
-        if (func) {
-            readyFunc_.insert(ExtMethod::INJECT_EVENTS);
+    // fast path: already loaded
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::INJECT_EVENTS) != readyFunc_.end()) {
             return func(gesturePath);
-        } else {
-            HILOG_ERROR("get InjectEvents func failed");
-            return RET_ERR_NULLPTR;
         }
     }
-    return func(gesturePath);
+    // slow path: load and call
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return RET_ERR_NULLPTR;
+        }
+        if (!func || readyFunc_.find(ExtMethod::INJECT_EVENTS) == readyFunc_.end()) {
+            func = (InjectEvents)GetFunc("InjectEvents");
+            if (!func) {
+                HILOG_ERROR("get InjectEvents func failed");
+                return RET_ERR_NULLPTR;
+            }
+            readyFunc_.insert(ExtMethod::INJECT_EVENTS);
+        }
+        return func(gesturePath);
+    }
 }
 
 void ExtendManagerServiceProxy::SetServiceOnKeyEventResult(int32_t connectionId, bool isHandled, uint32_t sequenceNum)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using SetServiceOnKeyEventResult = void(*)(int32_t connectionId, bool isHandled, uint32_t sequenceNum);
     static SetServiceOnKeyEventResult func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::SET_SERVICE_ON_KEY_EVENT_RESULT) == readyFunc_.end()) {
-        func = (SetServiceOnKeyEventResult)GetFunc("SetServiceOnKeyEventResult");
-        if (func) {
-            readyFunc_.insert(ExtMethod::SET_SERVICE_ON_KEY_EVENT_RESULT);
-            return func(connectionId, isHandled, sequenceNum);
-        } else {
-            HILOG_ERROR("get SetServiceOnKeyEventResult func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::SET_SERVICE_ON_KEY_EVENT_RESULT) != readyFunc_.end()) {
+            func(connectionId, isHandled, sequenceNum);
             return;
         }
     }
-    return func(connectionId, isHandled, sequenceNum);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::SET_SERVICE_ON_KEY_EVENT_RESULT) == readyFunc_.end()) {
+            func = (SetServiceOnKeyEventResult)GetFunc("SetServiceOnKeyEventResult");
+            if (!func) {
+                HILOG_ERROR("get SetServiceOnKeyEventResult func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::SET_SERVICE_ON_KEY_EVENT_RESULT);
+        }
+        func(connectionId, isHandled, sequenceNum);
+    }
 }
 
 RetError ExtendManagerServiceProxy::SetMouseAutoClick(int32_t time)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using SetMouseAutoClick = RetError(*)(int32_t time);
     static SetMouseAutoClick func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return RET_ERR_NULLPTR;
-    }
-    if (!func || readyFunc_.find(ExtMethod::SET_MOUSE_AUTO_CLICK) == readyFunc_.end()) {
-        func = (SetMouseAutoClick)GetFunc("SetMouseAutoClick");
-        if (func) {
-            readyFunc_.insert(ExtMethod::SET_MOUSE_AUTO_CLICK);
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::SET_MOUSE_AUTO_CLICK) != readyFunc_.end()) {
             return func(time);
-        } else {
-            HILOG_ERROR("get SetMouseAutoClick func failed");
-            return RET_ERR_NULLPTR;
         }
     }
-    return func(time);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return RET_ERR_NULLPTR;
+        }
+        if (!func || readyFunc_.find(ExtMethod::SET_MOUSE_AUTO_CLICK) == readyFunc_.end()) {
+            func = (SetMouseAutoClick)GetFunc("SetMouseAutoClick");
+            if (!func) {
+                HILOG_ERROR("get SetMouseAutoClick func failed");
+                return RET_ERR_NULLPTR;
+            }
+            readyFunc_.insert(ExtMethod::SET_MOUSE_AUTO_CLICK);
+        }
+        return func(time);
+    }
 }
 
 RetError ExtendManagerServiceProxy::SetClickConfig(AccessibilityConfig::IGNORE_REPEAT_CLICK_TIME clickTime, bool state,
         AccessibilityConfig::CLICK_RESPONSE_TIME responseTime)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using SetClickConfig = RetError(*)(AccessibilityConfig::IGNORE_REPEAT_CLICK_TIME clickTime, bool state,
         AccessibilityConfig::CLICK_RESPONSE_TIME responseTime);
     static SetClickConfig func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return RET_ERR_NULLPTR;
-    }
-    if (!func || readyFunc_.find(ExtMethod::SET_CLICK_CONFIG) == readyFunc_.end()) {
-        func = (SetClickConfig)GetFunc("SetClickConfig");
-        if (func) {
-            readyFunc_.insert(ExtMethod::SET_CLICK_CONFIG);
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::SET_CLICK_CONFIG) != readyFunc_.end()) {
             return func(clickTime, state, responseTime);
-        } else {
-            HILOG_ERROR("get SetClickConfig func failed");
-            return RET_ERR_NULLPTR;
         }
     }
-    return func(clickTime, state, responseTime);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return RET_ERR_NULLPTR;
+        }
+        if (!func || readyFunc_.find(ExtMethod::SET_CLICK_CONFIG) == readyFunc_.end()) {
+            func = (SetClickConfig)GetFunc("SetClickConfig");
+            if (!func) {
+                HILOG_ERROR("get SetClickConfig func failed");
+                return RET_ERR_NULLPTR;
+            }
+            readyFunc_.insert(ExtMethod::SET_CLICK_CONFIG);
+        }
+        return func(clickTime, state, responseTime);
+    }
 }
 
 void ExtendManagerServiceProxy::SetMagnificationMode(uint32_t mode)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using SetMagnificationMode = void(*)(uint32_t mode);
     static SetMagnificationMode func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::SET_MAGNIFICATION_MODE) == readyFunc_.end()) {
-        func = (SetMagnificationMode)GetFunc("SetMagnificationMode");
-        if (func) {
-            readyFunc_.insert(ExtMethod::SET_MAGNIFICATION_MODE);
-            return func(mode);
-        } else {
-            HILOG_ERROR("get SetMagnificationMode func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::SET_MAGNIFICATION_MODE) != readyFunc_.end()) {
+            func(mode);
             return;
         }
     }
-    return func(mode);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::SET_MAGNIFICATION_MODE) == readyFunc_.end()) {
+            func = (SetMagnificationMode)GetFunc("SetMagnificationMode");
+            if (!func) {
+                HILOG_ERROR("get SetMagnificationMode func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::SET_MAGNIFICATION_MODE);
+        }
+        func(mode);
+    }
 }
 
 void ExtendManagerServiceProxy::SetMagnificationType(uint32_t type)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using SetMagnificationType = void(*)(uint32_t type);
     static SetMagnificationType func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::SET_MAGNIFICATION_TYPE) == readyFunc_.end()) {
-        func = (SetMagnificationType)GetFunc("SetMagnificationType");
-        if (func) {
-            readyFunc_.insert(ExtMethod::SET_MAGNIFICATION_TYPE);
-            return func(type);
-        } else {
-            HILOG_ERROR("get SetMagnificationType func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::SET_MAGNIFICATION_TYPE) != readyFunc_.end()) {
+            func(type);
             return;
         }
     }
-    return func(type);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::SET_MAGNIFICATION_TYPE) == readyFunc_.end()) {
+            func = (SetMagnificationType)GetFunc("SetMagnificationType");
+            if (!func) {
+                HILOG_ERROR("get SetMagnificationType func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::SET_MAGNIFICATION_TYPE);
+        }
+        func(type);
+    }
 }
 
 void ExtendManagerServiceProxy::SetMagnificationScale(float scale)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using SetMagnificationScale = void(*)(float scale);
     static SetMagnificationScale func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::SET_MAGNIFICATION_SCALE) == readyFunc_.end()) {
-        func = (SetMagnificationScale)GetFunc("SetMagnificationScale");
-        if (func) {
-            readyFunc_.insert(ExtMethod::SET_MAGNIFICATION_SCALE);
-            return func(scale);
-        } else {
-            HILOG_ERROR("get SetMagnificationScale func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::SET_MAGNIFICATION_SCALE) != readyFunc_.end()) {
+            func(scale);
             return;
         }
     }
-    return func(scale);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::SET_MAGNIFICATION_SCALE) == readyFunc_.end()) {
+            func = (SetMagnificationScale)GetFunc("SetMagnificationScale");
+            if (!func) {
+                HILOG_ERROR("get SetMagnificationScale func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::SET_MAGNIFICATION_SCALE);
+        }
+        func(scale);
+    }
 }
 
 void ExtendManagerServiceProxy::UpdateInputFilter(uint32_t flag)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using UpdateInputFilter = void(*)(uint32_t flag);
     static UpdateInputFilter func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::UPDATE_INPUT_FILTER) == readyFunc_.end()) {
-        func = (UpdateInputFilter)GetFunc("UpdateInputFilter");
-        if (func) {
-            readyFunc_.insert(ExtMethod::UPDATE_INPUT_FILTER);
-            return func(flag);
-        } else {
-            HILOG_ERROR("get UpdateInputFilter func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::UPDATE_INPUT_FILTER) != readyFunc_.end()) {
+            func(flag);
             return;
         }
     }
-    return func(flag);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::UPDATE_INPUT_FILTER) == readyFunc_.end()) {
+            func = (UpdateInputFilter)GetFunc("UpdateInputFilter");
+            if (!func) {
+                HILOG_ERROR("get UpdateInputFilter func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::UPDATE_INPUT_FILTER);
+        }
+        func(flag);
+    }
 }
 
 RetError ExtendManagerServiceProxy::SetCurtainScreenUsingStatus(bool isEnable)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using SetCurtainScreenUsingStatus = RetError(*)(bool isEnable);
     static SetCurtainScreenUsingStatus func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return RET_ERR_NULLPTR;
-    }
-    if (!func || readyFunc_.find(ExtMethod::SET_CURTAIN_SCREEN_USING_STATUS) == readyFunc_.end()) {
-        func = (SetCurtainScreenUsingStatus)GetFunc("SetCurtainScreenUsingStatus");
-        if (func) {
-            readyFunc_.insert(ExtMethod::SET_CURTAIN_SCREEN_USING_STATUS);
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::SET_CURTAIN_SCREEN_USING_STATUS) != readyFunc_.end()) {
             return func(isEnable);
-        } else {
-            HILOG_ERROR("get SetCurtainScreenUsingStatus func failed");
-            return RET_ERR_NULLPTR;
         }
     }
-    return func(isEnable);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return RET_ERR_NULLPTR;
+        }
+        if (!func || readyFunc_.find(ExtMethod::SET_CURTAIN_SCREEN_USING_STATUS) == readyFunc_.end()) {
+            func = (SetCurtainScreenUsingStatus)GetFunc("SetCurtainScreenUsingStatus");
+            if (!func) {
+                HILOG_ERROR("get SetCurtainScreenUsingStatus func failed");
+                return RET_ERR_NULLPTR;
+            }
+            readyFunc_.insert(ExtMethod::SET_CURTAIN_SCREEN_USING_STATUS);
+        }
+        return func(isEnable);
+    }
 }
 
 uint64_t ExtendManagerServiceProxy::GetDefaultDisplayId()
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using GetDefaultDisplayId = uint64_t(*)();
     static GetDefaultDisplayId func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return 0;
-    }
-    if (!func || readyFunc_.find(ExtMethod::GET_DEFAULT_DISPLAY_ID) == readyFunc_.end()) {
-        func = (GetDefaultDisplayId)GetFunc("GetDefaultDisplayId");
-        if (func) {
-            readyFunc_.insert(ExtMethod::GET_DEFAULT_DISPLAY_ID);
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::GET_DEFAULT_DISPLAY_ID) != readyFunc_.end()) {
             return func();
-        } else {
-            HILOG_ERROR("get GetDefaultDisplayId func failed");
-            return 0;
         }
     }
-    return func();
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return 0;
+        }
+        if (!func || readyFunc_.find(ExtMethod::GET_DEFAULT_DISPLAY_ID) == readyFunc_.end()) {
+            func = (GetDefaultDisplayId)GetFunc("GetDefaultDisplayId");
+            if (!func) {
+                HILOG_ERROR("get GetDefaultDisplayId func failed");
+                return 0;
+            }
+            readyFunc_.insert(ExtMethod::GET_DEFAULT_DISPLAY_ID);
+        }
+        return func();
+    }
 }
 
 int32_t ExtendManagerServiceProxy::PublishIgnoreRepeatClickReminder()
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using PublishIgnoreRepeatClickReminder = int32_t(*)();
     static PublishIgnoreRepeatClickReminder func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return RET_ERR_NULLPTR;
-    }
-    if (!func || readyFunc_.find(ExtMethod::PUBLISH_IGNORE_REPEAT_CLICK_REMINDER) == readyFunc_.end()) {
-        func = (PublishIgnoreRepeatClickReminder)GetFunc("PublishIgnoreRepeatClickReminder");
-        if (func) {
-            readyFunc_.insert(ExtMethod::PUBLISH_IGNORE_REPEAT_CLICK_REMINDER);
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::PUBLISH_IGNORE_REPEAT_CLICK_REMINDER) != readyFunc_.end()) {
             return func();
-        } else {
-            HILOG_ERROR("get PublishIgnoreRepeatClickReminder func failed");
-            return RET_ERR_NULLPTR;
         }
     }
-    return func();
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return RET_ERR_NULLPTR;
+        }
+        if (!func || readyFunc_.find(ExtMethod::PUBLISH_IGNORE_REPEAT_CLICK_REMINDER) == readyFunc_.end()) {
+            func = (PublishIgnoreRepeatClickReminder)GetFunc("PublishIgnoreRepeatClickReminder");
+            if (!func) {
+                HILOG_ERROR("get PublishIgnoreRepeatClickReminder func failed");
+                return RET_ERR_NULLPTR;
+            }
+            readyFunc_.insert(ExtMethod::PUBLISH_IGNORE_REPEAT_CLICK_REMINDER);
+        }
+        return func();
+    }
 }
 
 void ExtendManagerServiceProxy::CancelNotification()
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using CancelNotification = void(*)();
     static CancelNotification func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::CANCEl_NOTIFICATION) == readyFunc_.end()) {
-        func = (CancelNotification)GetFunc("CancelNotification");
-        if (func) {
-            readyFunc_.insert(ExtMethod::CANCEl_NOTIFICATION);
-            return func();
-        } else {
-            HILOG_ERROR("get CancelNotification func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::CANCEl_NOTIFICATION) != readyFunc_.end()) {
+            func();
             return;
         }
     }
-    return func();
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::CANCEl_NOTIFICATION) == readyFunc_.end()) {
+            func = (CancelNotification)GetFunc("CancelNotification");
+            if (!func) {
+                HILOG_ERROR("get CancelNotification func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::CANCEl_NOTIFICATION);
+        }
+        func();
+    }
 }
 
 int32_t ExtendManagerServiceProxy::RegisterTimers(uint64_t beginTime)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using RegisterTimers = int32_t(*)(uint64_t beginTime);
     static RegisterTimers func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return RET_ERR_NULLPTR;
-    }
-    if (!func || readyFunc_.find(ExtMethod::REGISTER_TIMERS) == readyFunc_.end()) {
-        func = (RegisterTimers)GetFunc("RegisterTimers");
-        if (func) {
-            readyFunc_.insert(ExtMethod::REGISTER_TIMERS);
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::REGISTER_TIMERS) != readyFunc_.end()) {
             return func(beginTime);
-        } else {
-            HILOG_ERROR("get RegisterTimers func failed");
-            return RET_ERR_NULLPTR;
         }
     }
-    return func(beginTime);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return RET_ERR_NULLPTR;
+        }
+        if (!func || readyFunc_.find(ExtMethod::REGISTER_TIMERS) == readyFunc_.end()) {
+            func = (RegisterTimers)GetFunc("RegisterTimers");
+            if (!func) {
+                HILOG_ERROR("get RegisterTimers func failed");
+                return RET_ERR_NULLPTR;
+            }
+            readyFunc_.insert(ExtMethod::REGISTER_TIMERS);
+        }
+        return func(beginTime);
+    }
 }
 
 void ExtendManagerServiceProxy::DestroyTimers()
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using DestroyTimers = void(*)();
     static DestroyTimers func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::DESTORY_TIMERS) == readyFunc_.end()) {
-        func = (DestroyTimers)GetFunc("DestroyTimers");
-        if (func) {
-            readyFunc_.insert(ExtMethod::DESTORY_TIMERS);
-            return func();
-        } else {
-            HILOG_ERROR("get DestroyTimers func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::DESTORY_TIMERS) != readyFunc_.end()) {
+            func();
             return;
         }
     }
-    return func();
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::DESTORY_TIMERS) == readyFunc_.end()) {
+            func = (DestroyTimers)GetFunc("DestroyTimers");
+            if (!func) {
+                HILOG_ERROR("get DestroyTimers func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::DESTORY_TIMERS);
+        }
+        func();
+    }
 }
 
 int64_t ExtendManagerServiceProxy::GetWallTimeMs()
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using GetWallTimeMs = int64_t(*)();
     static GetWallTimeMs func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return 0;
-    }
-    if (!func || readyFunc_.find(ExtMethod::GET_WALL_TIME_MS) == readyFunc_.end()) {
-        func = (GetWallTimeMs)GetFunc("GetWallTimeMs");
-        if (func) {
-            readyFunc_.insert(ExtMethod::GET_WALL_TIME_MS);
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::GET_WALL_TIME_MS) != readyFunc_.end()) {
             return func();
-        } else {
-            HILOG_ERROR("get GetWallTimeMs func failed");
-            return 0;
         }
     }
-    return func();
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return 0;
+        }
+        if (!func || readyFunc_.find(ExtMethod::GET_WALL_TIME_MS) == readyFunc_.end()) {
+            func = (GetWallTimeMs)GetFunc("GetWallTimeMs");
+            if (!func) {
+                HILOG_ERROR("get GetWallTimeMs func failed");
+                return 0;
+            }
+            readyFunc_.insert(ExtMethod::GET_WALL_TIME_MS);
+        }
+        return func();
+    }
 }
 
 int32_t ExtendManagerServiceProxy::PublishTransitionAnimationsReminder()
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using PublishTransitionAnimationsReminder = int32_t(*)();
     static PublishTransitionAnimationsReminder func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return 0;
-    }
-    if (!func || readyFunc_.find(ExtMethod::PUBLISH_TRANSITION_ANIMATIONS_REMINDER) == readyFunc_.end()) {
-        func = (PublishTransitionAnimationsReminder)GetFunc("PublishTransitionAnimationsReminder");
-        if (func) {
-            readyFunc_.insert(ExtMethod::PUBLISH_TRANSITION_ANIMATIONS_REMINDER);
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::PUBLISH_TRANSITION_ANIMATIONS_REMINDER) != readyFunc_.end()) {
             return func();
-        } else {
-            HILOG_ERROR("get PublishTransitionAnimationsReminder func failed");
-            return 0;
         }
     }
-    return func();
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return 0;
+        }
+        if (!func || readyFunc_.find(ExtMethod::PUBLISH_TRANSITION_ANIMATIONS_REMINDER) == readyFunc_.end()) {
+            func = (PublishTransitionAnimationsReminder)GetFunc("PublishTransitionAnimationsReminder");
+            if (!func) {
+                HILOG_ERROR("get PublishTransitionAnimationsReminder func failed");
+                return 0;
+            }
+            readyFunc_.insert(ExtMethod::PUBLISH_TRANSITION_ANIMATIONS_REMINDER);
+        }
+        return func();
+    }
 }
 
 void ExtendManagerServiceProxy::TransitionAnimationsCancelNotification()
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using TransitionAnimationsCancelNotification = void(*)();
     static TransitionAnimationsCancelNotification func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::TRANSITION_ANIMATIONS_CANCEL_NOTIFICATION) == readyFunc_.end()) {
-        func = (TransitionAnimationsCancelNotification)GetFunc("TransitionAnimationsCancelNotification");
-        if (func) {
-            readyFunc_.insert(ExtMethod::TRANSITION_ANIMATIONS_CANCEL_NOTIFICATION);
-            return func();
-        } else {
-            HILOG_ERROR("get TransitionAnimationsCancelNotification func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::TRANSITION_ANIMATIONS_CANCEL_NOTIFICATION) != readyFunc_.end()) {
+            func();
             return;
         }
     }
-    return func();
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::TRANSITION_ANIMATIONS_CANCEL_NOTIFICATION) == readyFunc_.end()) {
+            func = (TransitionAnimationsCancelNotification)GetFunc("TransitionAnimationsCancelNotification");
+            if (!func) {
+                HILOG_ERROR("get TransitionAnimationsCancelNotification func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::TRANSITION_ANIMATIONS_CANCEL_NOTIFICATION);
+        }
+        func();
+    }
 }
 
 int32_t ExtendManagerServiceProxy::TransitionAnimationsRegisterTimers(uint64_t beginTime)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using TransitionAnimationsRegisterTimers = int32_t(*)(uint64_t beginTime);
     static TransitionAnimationsRegisterTimers func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return 0;
-    }
-    if (!func || readyFunc_.find(ExtMethod::TRANSITION_ANIMATIONS_REGISTER_TIMERS) == readyFunc_.end()) {
-        func = (TransitionAnimationsRegisterTimers)GetFunc("TransitionAnimationsRegisterTimers");
-        if (func) {
-            readyFunc_.insert(ExtMethod::TRANSITION_ANIMATIONS_REGISTER_TIMERS);
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::TRANSITION_ANIMATIONS_REGISTER_TIMERS) != readyFunc_.end()) {
             return func(beginTime);
-        } else {
-            HILOG_ERROR("get TransitionAnimationsRegisterTimers func failed");
-            return 0;
         }
     }
-    return func(beginTime);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return 0;
+        }
+        if (!func || readyFunc_.find(ExtMethod::TRANSITION_ANIMATIONS_REGISTER_TIMERS) == readyFunc_.end()) {
+            func = (TransitionAnimationsRegisterTimers)GetFunc("TransitionAnimationsRegisterTimers");
+            if (!func) {
+                HILOG_ERROR("get TransitionAnimationsRegisterTimers func failed");
+                return 0;
+            }
+            readyFunc_.insert(ExtMethod::TRANSITION_ANIMATIONS_REGISTER_TIMERS);
+        }
+        return func(beginTime);
+    }
 }
 
 void ExtendManagerServiceProxy::TransitionAnimationsDestroyTimers()
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using TransitionAnimationsDestroyTimers = void(*)();
     static TransitionAnimationsDestroyTimers func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::TRANSITION_ANIMATIONS_DESTROY_TIMERS) == readyFunc_.end()) {
-        func = (TransitionAnimationsDestroyTimers)GetFunc("TransitionAnimationsDestroyTimers");
-        if (func) {
-            readyFunc_.insert(ExtMethod::TRANSITION_ANIMATIONS_DESTROY_TIMERS);
-            return func();
-        } else {
-            HILOG_ERROR("get TransitionAnimationsDestroyTimers func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::TRANSITION_ANIMATIONS_DESTROY_TIMERS) != readyFunc_.end()) {
+            func();
             return;
         }
     }
-    return func();
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::TRANSITION_ANIMATIONS_DESTROY_TIMERS) == readyFunc_.end()) {
+            func = (TransitionAnimationsDestroyTimers)GetFunc("TransitionAnimationsDestroyTimers");
+            if (!func) {
+                HILOG_ERROR("get TransitionAnimationsDestroyTimers func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::TRANSITION_ANIMATIONS_DESTROY_TIMERS);
+        }
+        func();
+    }
 }
 
 void ExtendManagerServiceProxy::OnScreenMagnificationTriggerMethodChanged(int32_t screenMagnificationTriggerMethod)
 {
     using OnScreenMagnificationTriggerMethodChanged = void(*)(int32_t screenMagnificationTriggerMethod);
     static OnScreenMagnificationTriggerMethodChanged func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::ON_SCREEN_MAGNIFICATION_TRIGGER_METHOD_CHANGE) == readyFunc_.end()) {
-        func = (OnScreenMagnificationTriggerMethodChanged)GetFunc("OnScreenMagnificationTriggerMethodChanged");
-        if (func) {
-            readyFunc_.insert(ExtMethod::ON_SCREEN_MAGNIFICATION_TRIGGER_METHOD_CHANGE);
-            return func(screenMagnificationTriggerMethod);
-        } else {
-            HILOG_ERROR("get OnScreenMagnificationTriggerMethodChanged func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::ON_SCREEN_MAGNIFICATION_TRIGGER_METHOD_CHANGE) != readyFunc_.end()) {
+            func(screenMagnificationTriggerMethod);
             return;
         }
     }
-    return func(screenMagnificationTriggerMethod);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::ON_SCREEN_MAGNIFICATION_TRIGGER_METHOD_CHANGE) == readyFunc_.end()) {
+            func = (OnScreenMagnificationTriggerMethodChanged)GetFunc("OnScreenMagnificationTriggerMethodChanged");
+            if (!func) {
+                HILOG_ERROR("get OnScreenMagnificationTriggerMethodChanged func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::ON_SCREEN_MAGNIFICATION_TRIGGER_METHOD_CHANGE);
+        }
+        func(screenMagnificationTriggerMethod);
+    }
 }
 
 void ExtendManagerServiceProxy::OnScreenMagnificationTypeChanged(uint32_t screenMagnificationType)
 {
     using OnScreenMagnificationTypeChanged = void(*)(uint32_t screenMagnificationType);
     static OnScreenMagnificationTypeChanged func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::ON_SCREEN_MAGNIFICATION_TYPE_CHANGED) == readyFunc_.end()) {
-        func = (OnScreenMagnificationTypeChanged)GetFunc("OnScreenMagnificationTypeChanged");
-        if (func) {
-            readyFunc_.insert(ExtMethod::ON_SCREEN_MAGNIFICATION_TYPE_CHANGED);
-            return func(screenMagnificationType);
-        } else {
-            HILOG_ERROR("get OnScreenMagnificationTypeChanged func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::ON_SCREEN_MAGNIFICATION_TYPE_CHANGED) != readyFunc_.end()) {
+            func(screenMagnificationType);
             return;
         }
     }
-    return func(screenMagnificationType);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::ON_SCREEN_MAGNIFICATION_TYPE_CHANGED) == readyFunc_.end()) {
+            func = (OnScreenMagnificationTypeChanged)GetFunc("OnScreenMagnificationTypeChanged");
+            if (!func) {
+                HILOG_ERROR("get OnScreenMagnificationTypeChanged func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::ON_SCREEN_MAGNIFICATION_TYPE_CHANGED);
+        }
+        func(screenMagnificationType);
+    }
 }
 
 void ExtendManagerServiceProxy::OnScreenMagnificationStateChanged()
 {
     using OnScreenMagnificationStateChanged = void(*)();
     static OnScreenMagnificationStateChanged func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-
-    if (!func || readyFunc_.find(ExtMethod::ON_SCREEN_MAGNIFICATION_STATE_CHANGED) == readyFunc_.end()) {
-        func = (OnScreenMagnificationStateChanged)GetFunc("OnScreenMagnificationStateChanged");
-        if (func) {
-            readyFunc_.insert(ExtMethod::ON_SCREEN_MAGNIFICATION_STATE_CHANGED);
-            return func();
-        } else {
-            HILOG_ERROR("get OnScreenMagnificationStateChanged func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::ON_SCREEN_MAGNIFICATION_STATE_CHANGED) != readyFunc_.end()) {
+            func();
             return;
         }
     }
-    return func();
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::ON_SCREEN_MAGNIFICATION_STATE_CHANGED) == readyFunc_.end()) {
+            func = (OnScreenMagnificationStateChanged)GetFunc("OnScreenMagnificationStateChanged");
+            if (!func) {
+                HILOG_ERROR("get OnScreenMagnificationStateChanged func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::ON_SCREEN_MAGNIFICATION_STATE_CHANGED);
+        }
+        func();
+    }
 }
 
 void ExtendManagerServiceProxy::UnregisterDisplayListener()
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using UnregisterDisplayListener = void(*)();
     static UnregisterDisplayListener func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::UNREGISTER_DISPLAY_LISTENER) == readyFunc_.end()) {
-        func = (UnregisterDisplayListener)GetFunc("UnregisterDisplayListener");
-        if (func) {
-            readyFunc_.insert(ExtMethod::UNREGISTER_DISPLAY_LISTENER);
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::UNREGISTER_DISPLAY_LISTENER) != readyFunc_.end()) {
             func();
-        } else {
-            HILOG_ERROR("UnregisterDisplayListener func failed");
             return;
         }
     }
-    func();
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::UNREGISTER_DISPLAY_LISTENER) == readyFunc_.end()) {
+            func = (UnregisterDisplayListener)GetFunc("UnregisterDisplayListener");
+            if (!func) {
+                HILOG_ERROR("UnregisterDisplayListener func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::UNREGISTER_DISPLAY_LISTENER);
+        }
+        func();
+    }
 }
 
 void ExtendManagerServiceProxy::GetClickPosition(int32_t &xPos, int32_t &yPos)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using GetClickPosition = void(*)(int32_t &xPos, int32_t &yPos);
     static GetClickPosition func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::GET_CLICK_POSITION) == readyFunc_.end()) {
-        func = (GetClickPosition)GetFunc("GetClickPosition");
-        if (func) {
-            readyFunc_.insert(ExtMethod::GET_CLICK_POSITION);
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::GET_CLICK_POSITION) != readyFunc_.end()) {
             func(xPos, yPos);
-        } else {
-            HILOG_ERROR("GetClickPosition func failed");
             return;
         }
     }
-    func(xPos, yPos);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::GET_CLICK_POSITION) == readyFunc_.end()) {
+            func = (GetClickPosition)GetFunc("GetClickPosition");
+            if (!func) {
+                HILOG_ERROR("GetClickPosition func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::GET_CLICK_POSITION);
+        }
+        func(xPos, yPos);
+    }
 }
 
 bool ExtendManagerServiceProxy::CheckExtProxyStatus()
@@ -976,25 +1138,30 @@ bool ExtendManagerServiceProxy::CheckExtProxyStatus()
 
 bool ExtendManagerServiceProxy::IsMagnificationWindowActivate()
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using IsMagnificationWindowActivate = bool (*)();
     static IsMagnificationWindowActivate func = nullptr;
- 
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return false;
-    }
- 
-    if (!func || readyFunc_.find(ExtMethod::IS_MAGNIFICATION_WINDOW_ACTIVATE) == readyFunc_.end()) {
-        func = (IsMagnificationWindowActivate)GetFunc("IsMagnificationWindowActivate");
-        if (func) {
-            readyFunc_.insert(ExtMethod::IS_MAGNIFICATION_WINDOW_ACTIVATE);
-        } else {
-            HILOG_ERROR("IsMagnificationWindowActivate func failed");
-            return false;
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::IS_MAGNIFICATION_WINDOW_ACTIVATE) != readyFunc_.end()) {
+            return func();
         }
     }
-    return func();
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return false;
+        }
+        if (!func || readyFunc_.find(ExtMethod::IS_MAGNIFICATION_WINDOW_ACTIVATE) == readyFunc_.end()) {
+            func = (IsMagnificationWindowActivate)GetFunc("IsMagnificationWindowActivate");
+            if (!func) {
+                HILOG_ERROR("IsMagnificationWindowActivate func failed");
+                return false;
+            }
+            readyFunc_.insert(ExtMethod::IS_MAGNIFICATION_WINDOW_ACTIVATE);
+        }
+        return func();
+    }
 }
 
 static int32_t GetMagnificationTriggerMethodCallback()
@@ -1114,24 +1281,30 @@ bool ExtendManagerServiceProxy::ExtendAnnouncedForMagnificationCallback() {
 
 bool ExtendManagerServiceProxy::DiscountBrightness(const float discount)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using DiscountBrightness = bool(*)(const float discount);
     static DiscountBrightness func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return false;
-    }
-    if (!func || readyFunc_.find(ExtMethod::DISCOUNT_BRIGHTNESS) == readyFunc_.end()) {
-        func = (DiscountBrightness)GetFunc("DiscountBrightness");
-        if (func) {
-            readyFunc_.insert(ExtMethod::DISCOUNT_BRIGHTNESS);
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::DISCOUNT_BRIGHTNESS) != readyFunc_.end()) {
             return func(discount);
-        } else {
-            HILOG_ERROR("get DiscountBrightness func failed");
-            return false;
         }
     }
-    return func(discount);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return false;
+        }
+        if (!func || readyFunc_.find(ExtMethod::DISCOUNT_BRIGHTNESS) == readyFunc_.end()) {
+            func = (DiscountBrightness)GetFunc("DiscountBrightness");
+            if (!func) {
+                HILOG_ERROR("get DiscountBrightness func failed");
+                return false;
+            }
+            readyFunc_.insert(ExtMethod::DISCOUNT_BRIGHTNESS);
+        }
+        return func(discount);
+    }
 }
 
 static void MagnificationScaleCallback(float scale) {
@@ -1169,46 +1342,60 @@ bool ExtendManagerServiceProxy::ExtendGetAccessibilityWindowsCallback() {
 
 void ExtendManagerServiceProxy::FollowFocuseElement(const int32_t centerX, const int32_t centerY)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using FollowFocuseElement = void(*)(const int32_t centerX, const int32_t centerY);
     static FollowFocuseElement func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::FOLLOW_FOCUSE_ELEMENT) == readyFunc_.end()) {
-        func = (FollowFocuseElement)GetFunc("FollowFocuseElement");
-        if (func) {
-            readyFunc_.insert(ExtMethod::FOLLOW_FOCUSE_ELEMENT);
-            return func(centerX, centerY);
-        } else {
-            HILOG_ERROR("get FollowFocuseElement func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::FOLLOW_FOCUSE_ELEMENT) != readyFunc_.end()) {
+            func(centerX, centerY);
             return;
         }
     }
-    return func(centerX, centerY);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::FOLLOW_FOCUSE_ELEMENT) == readyFunc_.end()) {
+            func = (FollowFocuseElement)GetFunc("FollowFocuseElement");
+            if (!func) {
+                HILOG_ERROR("get FollowFocuseElement func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::FOLLOW_FOCUSE_ELEMENT);
+        }
+        func(centerX, centerY);
+    }
 }
 
 void ExtendManagerServiceProxy::OffZoomGesture()
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using OffZoomGesture = void(*)();
     static OffZoomGesture func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::OFF_ZOOM_GESTURE) == readyFunc_.end()) {
-        func = (OffZoomGesture)GetFunc("OffZoomGesture");
-        if (func) {
-            readyFunc_.insert(ExtMethod::OFF_ZOOM_GESTURE);
-            return func();
-        } else {
-            HILOG_ERROR("get OffZoomGesture func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::OFF_ZOOM_GESTURE) != readyFunc_.end()) {
+            func();
             return;
         }
     }
-    return func();
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::OFF_ZOOM_GESTURE) == readyFunc_.end()) {
+            func = (OffZoomGesture)GetFunc("OffZoomGesture");
+            if (!func) {
+                HILOG_ERROR("get OffZoomGesture func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::OFF_ZOOM_GESTURE);
+        }
+        func();
+    }
 }
 
 static void SubscribeOsAccountCallback() {
@@ -1229,47 +1416,61 @@ bool ExtendManagerServiceProxy::ExtendSubscribeOsAccountCallback() {
 
 void ExtendManagerServiceProxy::SetMagnificationState(const bool state, const uint32_t type, const uint32_t mode)
 {
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using SetMagnificationState = void(*)(const bool state, const uint32_t type, const uint32_t mode);
     static SetMagnificationState func;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::SET_MAGNIFICATION_STATE) == readyFunc_.end()) {
-        func = (SetMagnificationState)GetFunc("SetMagnificationState");
-        if (func) {
-            readyFunc_.insert(ExtMethod::SET_MAGNIFICATION_STATE);
-            return func(state, type, mode);
-        } else {
-            HILOG_ERROR("get SetMagnificationState func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::SET_MAGNIFICATION_STATE) != readyFunc_.end()) {
+            func(state, type, mode);
             return;
         }
     }
-    return func(state, type, mode);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::SET_MAGNIFICATION_STATE) == readyFunc_.end()) {
+            func = (SetMagnificationState)GetFunc("SetMagnificationState");
+            if (!func) {
+                HILOG_ERROR("get SetMagnificationState func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::SET_MAGNIFICATION_STATE);
+        }
+        func(state, type, mode);
+    }
 }
 
 void ExtendManagerServiceProxy::SetCurrentAccountId(int32_t accountId)
 {
     HILOG_DEBUG();
-    std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
     using SetCurrentAccountIdFunc = void(*)(int32_t accountId);
     static SetCurrentAccountIdFunc func = nullptr;
-    if (!handle_) {
-        HILOG_ERROR("handle is null");
-        return;
-    }
-    if (!func || readyFunc_.find(ExtMethod::SET_CURRENT_ACCOUNT_ID) == readyFunc_.end()) {
-        func = (SetCurrentAccountIdFunc)GetFunc("SetCurrentAccountId");
-        if (func) {
-            readyFunc_.insert(ExtMethod::SET_CURRENT_ACCOUNT_ID);
-            return func(accountId);
-        } else {
-            HILOG_ERROR("get SetCurrentAccountId func failed");
+    {
+        std::shared_lock<ffrt::shared_mutex> rLock(rwLock_);
+        if (func && readyFunc_.find(ExtMethod::SET_CURRENT_ACCOUNT_ID) != readyFunc_.end()) {
+            func(accountId);
             return;
         }
     }
-    return func(accountId);
+    {
+        std::unique_lock<ffrt::shared_mutex> wLock(rwLock_);
+        if (!handle_) {
+            HILOG_ERROR("handle is null");
+            return;
+        }
+        if (!func || readyFunc_.find(ExtMethod::SET_CURRENT_ACCOUNT_ID) == readyFunc_.end()) {
+            func = (SetCurrentAccountIdFunc)GetFunc("SetCurrentAccountId");
+            if (!func) {
+                HILOG_ERROR("get SetCurrentAccountId func failed");
+                return;
+            }
+            readyFunc_.insert(ExtMethod::SET_CURRENT_ACCOUNT_ID);
+        }
+        func(accountId);
+    }
 }
 } // namespace Accessibility
 } // namespace OHOS
