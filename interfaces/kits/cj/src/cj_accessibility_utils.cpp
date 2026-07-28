@@ -148,6 +148,9 @@ CAccessibilityAbilityInfo ConvertAccAbilityInfo2C(AccessibilityAbilityInfo &abil
 
 void FreecAbility(CAccessibilityAbilityInfo *cAbility)
 {
+    if (cAbility == nullptr) {
+        return;
+    }
     free(cAbility->id_);
     cAbility->id_ = nullptr;
     free(cAbility->name_);
@@ -159,27 +162,27 @@ void FreecAbility(CAccessibilityAbilityInfo *cAbility)
     free(cAbility->label_);
     cAbility->label_ = nullptr;
     for (auto i = 0; i < cAbility->targetBundleNames_.size; i++) {
-        free(cAbility->targetBundleNames_.head[i]);
+        delete[] cAbility->targetBundleNames_.head[i];
     }
-    free(cAbility->targetBundleNames_.head);
+    delete[] cAbility->targetBundleNames_.head;
     cAbility->targetBundleNames_.head = nullptr;
 
     for (auto i = 0; i < cAbility->abilityTypes_.size; i++) {
-        free(cAbility->abilityTypes_.head[i]);
+        delete[] cAbility->abilityTypes_.head[i];
     }
-    free(cAbility->abilityTypes_.head);
+    delete[] cAbility->abilityTypes_.head;
     cAbility->abilityTypes_.head = nullptr;
 
     for (auto i = 0; i < cAbility->capabilities_.size; i++) {
-        free(cAbility->capabilities_.head[i]);
+        delete[] cAbility->capabilities_.head[i];
     }
-    free(cAbility->capabilities_.head);
+    delete[] cAbility->capabilities_.head;
     cAbility->capabilities_.head = nullptr;
 
     for (auto i = 0; i < cAbility->eventTypes_.size; i++) {
-        free(cAbility->eventTypes_.head[i]);
+        delete[] cAbility->eventTypes_.head[i];
     }
-    free(cAbility->eventTypes_.head);
+    delete[] cAbility->eventTypes_.head;
     cAbility->eventTypes_.head = nullptr;
 }
 
@@ -202,8 +205,9 @@ CArrAccessibilityAbilityInfo ConvertArrAccAbilityInfo2CArr(std::vector<Accessibi
         cAbility[i] = ConvertAccAbilityInfo2C(abilityList[i], errCode);
         if (errCode != RET_OK) {
             for (auto j = 0; j < i; j++) {
-                FreecAbility(&cAbility[j]);         
+                FreecAbility(&cAbility[j]);
             }
+            FreecAbility(&cAbility[i]);
             free(cAbility);
             cAbility = nullptr;
             HILOG_ERROR("ConvertAccAbilityInfo2C failed.");
@@ -212,6 +216,36 @@ CArrAccessibilityAbilityInfo ConvertArrAccAbilityInfo2CArr(std::vector<Accessibi
     }
     cArrAbility.head = cAbility;
     return cArrAbility;
+}
+
+void FreeCEventInfo(CEventInfo &cEventInfo)
+{
+    free(cEventInfo.type_);
+    cEventInfo.type_ = nullptr;
+    free(cEventInfo.windowUpdateType_);
+    cEventInfo.windowUpdateType_ = nullptr;
+    free(cEventInfo.bundleName_);
+    cEventInfo.bundleName_ = nullptr;
+    free(cEventInfo.componentType_);
+    cEventInfo.componentType_ = nullptr;
+    free(cEventInfo.description_);
+    cEventInfo.description_ = nullptr;
+    free(cEventInfo.triggerAction_);
+    cEventInfo.triggerAction_ = nullptr;
+    free(cEventInfo.textMoveUnit_);
+    cEventInfo.textMoveUnit_ = nullptr;
+    free(cEventInfo.lastContent_);
+    cEventInfo.lastContent_ = nullptr;
+    free(cEventInfo.textAnnouncedForAccessibility_);
+    cEventInfo.textAnnouncedForAccessibility_ = nullptr;
+    free(cEventInfo.customId_);
+    cEventInfo.customId_ = nullptr;
+    for (auto i = 0; i < cEventInfo.contents_.size; i++) {
+        delete[] cEventInfo.contents_.head[i];
+    }
+    delete[] cEventInfo.contents_.head;
+    cEventInfo.contents_.head = nullptr;
+    cEventInfo.contents_.size = 0;
 }
 
 CEventInfo ConvertEventInfo2C(const AccessibilityEventInfo &eventInfo, RetError &errCode)
@@ -239,6 +273,9 @@ CEventInfo ConvertEventInfo2C(const AccessibilityEventInfo &eventInfo, RetError 
     cEventInfo.elementId_ = eventInfo.GetAccessibilityId();
     cEventInfo.textAnnouncedForAccessibility_ = MallocCString(eventInfo.GetTextAnnouncedForAccessibility(), errCode);
     cEventInfo.customId_ = MallocCString(eventInfo.GetInspectorKey(), errCode);
+    if (errCode != RET_OK) {
+        FreeCEventInfo(cEventInfo);
+    }
     return cEventInfo;
 }
 
