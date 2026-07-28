@@ -1907,7 +1907,7 @@ void AccessibleAbilityManagerService::PackageRemoved(const std::string &bundleNa
         return;
     }
     sptr<AccessibilityAccountData> packageAccount = GetAccountData(userId);
-    if (!packageAccount && packageAccount->GetConfig()) {
+    if (!packageAccount || !packageAccount->GetConfig()) {
         HILOG_ERROR("packageAccount is nullptr.");
         return;
     }
