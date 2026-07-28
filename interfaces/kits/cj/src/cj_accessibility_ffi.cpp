@@ -35,6 +35,7 @@ bool FfiAccIsOpenAccessibility(int32_t *errorCode)
     if (asaClient == nullptr) {
         *errorCode = ERR_INPUT_INVALID;
         HILOG_ERROR("AccessibilitySystemAbilityClient instance is nullptr.");
+        return status;
     }
     auto ret = asaClient->IsEnabled(status);
     if (ret != RET_OK) {
@@ -47,11 +48,12 @@ bool FfiAccIsOpenAccessibility(int32_t *errorCode)
 bool FfiAccIsOpenTouchGuide(int32_t *errorCode)
 {
     auto asaClient = AccessibilitySystemAbilityClient::GetInstance();
+    bool status = false;
     if (asaClient == nullptr) {
         *errorCode = ERR_INPUT_INVALID;
         HILOG_ERROR("AccessibilitySystemAbilityClient instance is nullptr.");
+        return status;
     }
-    bool status = false;
     auto ret = asaClient->IsTouchExplorationEnabled(status);
     if (ret != RET_OK) {
         *errorCode = ERR_INPUT_INVALID;
@@ -65,6 +67,7 @@ bool FfiAccIsScreenReaderOpen(int32_t *errorCode)
     auto asaClient = AccessibilitySystemAbilityClient::GetInstance();
     bool status = false;
     if (asaClient == nullptr) {
+        *errorCode = ERR_INPUT_INVALID;
         HILOG_ERROR("FfiAccSendAccessibilityEvent failed.");
         return status;
     }
