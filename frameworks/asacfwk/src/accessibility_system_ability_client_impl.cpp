@@ -1319,6 +1319,7 @@ RetError AccessibilitySystemAbilityClientImpl::CheckNodeIsSpecificType(
             isHit = rulesChecker.IsAvailable(node);
             break;
         default:
+            isHit = false;
             break;
     }
     return RET_OK;
