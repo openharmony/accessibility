@@ -2083,7 +2083,7 @@ HWTEST_F(AccessibilityConfigImplTest, GetSeniorModeStateForApp_001, TestSize.Lev
     bool state = false;
     auto &instance = OHOS::AccessibilityConfig::AccessibilityConfig::GetInstance();
     Accessibility::RetError ret = instance.GetSeniorModeStateForApp(bundleName, appIndex, state);
-    EXPECT_EQ(Accessibility::RET_ERR_INVALID_PARAM, ret);
+    EXPECT_EQ(Accessibility::RET_ERR_INVILID_APPINDEX, ret);
     GTEST_LOG_(INFO) << "GetSeniorModeStateForApp_001 end";
 }
 
