@@ -1036,6 +1036,11 @@ void AccessibilityZoomGesture::HandleSTZoomOneFingerDownStateDown(MMI::PointerEv
 {
     HILOG_DEBUG();
     CacheEvents(event);
+    if (IsKnuckles(event)) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+    }
     gestureType_ = INVALID_GESTURE_TYPE;
 
     zoomGestureEventHandler_->RemoveEvent(MULTI_TAP_MSG);
@@ -1516,6 +1521,11 @@ void AccessibilityZoomGesture::HandleTDZoomOneFingerDownStateDown(MMI::PointerEv
 {
     HILOG_DEBUG();
     CacheEvents(event);
+    if (IsKnuckles(event)) {
+        SendCacheEventsToNext();
+        TransferState(PASSING_THROUGH);
+        return;
+    }
     gestureType_ = INVALID_GESTURE_TYPE;
 
     zoomGestureEventHandler_->RemoveEvent(WAIT_ANOTHER_FINGER_DOWN_MSG);
