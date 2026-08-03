@@ -98,12 +98,12 @@ AccessibleBlinkingReminderManager::~AccessibleBlinkingReminderManager()
 
 bool AccessibleBlinkingReminderManager::IsDisplayEnabled(int32_t mode)
 {
-    return (mode & FlashReminderMode::DISPLAY) != 0;
+    return mode == FlashReminderMode::DISPLAY || mode == FlashReminderMode::BOTH;
 }
 
 bool AccessibleBlinkingReminderManager::IsFlashlightEnabled(int32_t mode)
 {
-    return (mode & FlashReminderMode::FLASHLIGHT) != 0;
+    return mode == FlashReminderMode::FLASHLIGHT || mode == FlashReminderMode::BOTH;
 }
 
 int64_t AccessibleBlinkingReminderManager::GetCurrentTimeMs()
@@ -194,14 +194,18 @@ int32_t AccessibleBlinkingReminderManager::ComputeEffectiveMode(const BlinkState
             anyFlash = true;
         }
     }
-    int32_t active = FlashReminderMode::NONE;
-    if (anyDisplay) {
-        active |= FlashReminderMode::DISPLAY;
+    bool displayActive = anyDisplay && (state.flashReminderMode == FlashReminderMode::DISPLAY
+        || state.flashReminderMode == FlashReminderMode::BOTH);
+    bool flashlightActive = anyFlash && (state.flashReminderMode == FlashReminderMode::FLASHLIGHT
+        || state.flashReminderMode == FlashReminderMode::BOTH);
+    if (displayActive && flashlightActive) {
+        return FlashReminderMode::BOTH;
+    } else if (displayActive) {
+        return FlashReminderMode::DISPLAY;
+    } else if (flashlightActive) {
+        return FlashReminderMode::FLASHLIGHT;
     }
-    if (anyFlash) {
-        active |= FlashReminderMode::FLASHLIGHT;
-    }
-    return active & state.flashReminderMode;
+    return FlashReminderMode::NONE;
 }
 
 void AccessibleBlinkingReminderManager::ResetRuntimeState()
