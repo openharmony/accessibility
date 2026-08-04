@@ -113,6 +113,7 @@ ohos_shared_library("aams_ext") {
     "window_manager:libdm",
     "window_manager:libwm",
     "eventhandler:libeventhandler",
+    "hilog:libhilog",
   ]
 
   if (defined(global_parts_info) &&
