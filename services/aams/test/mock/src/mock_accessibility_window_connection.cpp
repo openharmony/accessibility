@@ -182,7 +182,8 @@ void AccessibilityWindowConnection::ResetBrokerProxy()
 
 bool AccessibilityWindowConnection::CheckScbTokenIdMap(uint32_t tokenId)
 {
-    return scbTokenMap_.count(tokenId) != 0;
+    bool value = false;
+    return scbTokenMap_.Find(tokenId, value);
 }
  
 sptr<IAccessibilityElementOperator> AccessibilityWindowConnection::GetProxy(uint64_t displayId)
