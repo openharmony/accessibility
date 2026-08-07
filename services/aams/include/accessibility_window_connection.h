@@ -20,10 +20,7 @@
 #include "hilog_wrapper.h"
 #include "ffrt.h"
 #include "safe_map.h"
-#include <unordered_set>
-
 #include <atomic>
-#include <unordered_set>
 
 namespace OHOS {
 namespace Accessibility {
@@ -132,7 +129,7 @@ private:
     ffrt::mutex proxyMapMutex_;
     std::unordered_map<uint64_t, std::pair<sptr<IAccessibilityElementOperator>, sptr<IRemoteObject::DeathRecipient>>>
         proxyMap_;
-    std::unordered_set<uint32_t> scbTokenMap_;
+    SafeMap<uint32_t, bool> scbTokenMap_;
 };
 } // namespace Accessibility
 } // namespace OHOS
