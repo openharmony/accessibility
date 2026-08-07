@@ -182,10 +182,9 @@ void AccessibilityWindowConnection::ResetBrokerProxy()
 
 bool AccessibilityWindowConnection::CheckScbTokenIdMap(uint32_t tokenId)
 {
-    bool value = false;
-    return scbTokenMap_.Find(tokenId, value);
+    return scbTokenMap_.ReadVal(tokenId);
 }
- 
+
 sptr<IAccessibilityElementOperator> AccessibilityWindowConnection::GetProxy(uint64_t displayId)
 {
     std::lock_guard<ffrt::mutex> lock(proxyMutex_);
@@ -198,6 +197,7 @@ sptr<IAccessibilityElementOperator> AccessibilityWindowConnection::GetProxy(uint
         return proxyMap_[displayId].first;
     }
 }
+
 sptr<IAccessibilityElementOperator> AccessibilityWindowConnection::GetRawProxy(uint64_t displayId)
 {
     std::lock_guard<ffrt::mutex> lock(proxyMutex_);
