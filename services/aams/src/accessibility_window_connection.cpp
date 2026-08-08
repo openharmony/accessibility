@@ -95,7 +95,7 @@ RetError AccessibilityWindowConnection::SetTokenIdMap(const int32_t treeId,
     if (windowId_ != SCENE_BOARD_WINDOW_ID) {
         tokenIdMap_.EnsureInsert(treeId, tokenId);
     } else {
-        scbTokenMap_.insert(tokenId);
+        scbTokenMap_.EnsureInsert(tokenId, true);
     }
     return RET_OK;
 }
@@ -108,7 +108,7 @@ uint32_t AccessibilityWindowConnection::GetTokenIdMap(const int32_t treeId)
 
 bool AccessibilityWindowConnection::CheckScbTokenIdMap(uint32_t tokenId)
 {
-    return scbTokenMap_.count(tokenId) != 0;
+    return scbTokenMap_.ReadVal(tokenId);
 }
 
 void AccessibilityWindowConnection::GetAllTreeId(std::vector<int32_t> &treeIds)
