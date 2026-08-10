@@ -48,9 +48,9 @@ napi_status ParseResourceIdFromNAPI(napi_env env, napi_value value, uint32_t &id
         return status;
     }
     status = napi_has_property(env, value, propertyName, &hasProperty);
-    if (status != napi_ok || !hasProperty) {
+    if (!hasProperty) {
         HILOG_ERROR("property is null");
-        return napi_invalid_arg;
+        return status;
     }
     napi_value itemValue = nullptr;
     napi_get_property(env, value, propertyName, &itemValue);
@@ -71,9 +71,9 @@ napi_status ParseResourceBundleNameFromNAPI(napi_env env, napi_value value,
         return status;
     }
     status = napi_has_property(env, value, propertyName, &hasProperty);
-    if (status != napi_ok || !hasProperty) {
+    if (!hasProperty) {
         HILOG_ERROR("property is null");
-        return napi_invalid_arg;
+        return status;
     }
     napi_value itemValue = nullptr;
     status = napi_get_property(env, value, propertyName, &itemValue);
@@ -97,9 +97,9 @@ napi_status ParseSeniorModeStateFromNAPI(napi_env env, napi_value value, bool &s
         return status;
     }
     status = napi_has_property(env, value, propertyName, &hasProperty);
-    if (status != napi_ok || !hasProperty) {
+    if (!hasProperty) {
         HILOG_ERROR("property is null");
-        return napi_invalid_arg;
+        return status;
     }
     napi_value itemValue = nullptr;
     status = napi_get_property(env, value, propertyName, &itemValue);
@@ -148,9 +148,9 @@ napi_status ParseResourceModuleNameFromNAPI(napi_env env, napi_value value,
         return status;
     }
     status = napi_has_property(env, value, propertyName, &hasProperty);
-    if (status != napi_ok || !hasProperty) {
+    if (!hasProperty) {
         HILOG_ERROR("property is null");
-        return napi_invalid_arg;
+        return status;
     }
     napi_value itemValue = nullptr;
     status = napi_get_property(env, value, propertyName, &itemValue);
@@ -176,9 +176,9 @@ napi_status ParseResourceParamsFromNAPI(napi_env env, napi_value value,
         return status;
     }
     status = napi_has_property(env, value, propertyName, &hasProperty);
-    if (status != napi_ok || !hasProperty) {
+    if (!hasProperty) {
         HILOG_ERROR("property is null");
-        return napi_invalid_arg;
+        return status;
     }
     napi_value paramsValue = nullptr;
     status = napi_get_property(env, value, propertyName, &paramsValue);
