@@ -1496,11 +1496,6 @@ ani_boolean ANIAccessibilityConfig::GetSeniorModeStateForApp(ani_env *env, ani_s
         return static_cast<ani_boolean>(false);
     }
     int32_t appIndexInt = static_cast<int32_t>(appIndex);
-    if (appIndexInt < 0) {
-        HILOG_ERROR("appIndex is invalid: %{public}d", appIndexInt);
-        ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(RetError::RET_ERR_INVALID_PARAM));
-        return static_cast<ani_boolean>(false);
-    }
     auto &instance = OHOS::AccessibilityConfig::AccessibilityConfig::GetInstance();
     OHOS::Accessibility::RetError ret = instance.GetSeniorModeStateForApp(bundleNameStr, appIndexInt, state);
     if (ret != OHOS::Accessibility::RET_OK) {
