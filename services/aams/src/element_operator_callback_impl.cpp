@@ -91,9 +91,6 @@ void ElementOperatorCallbackImpl::SetSearchElementInfoBySpecificPropertyResult(
 {
     HILOG_DEBUG("Response [requestId:%{public}d]", requestId);
     if (!infos.empty()) {
-        if (!ValidateElementInfos(infos)) {
-            return;
-        }
         elementInfosResult_.assign(infos.begin(), infos.end());
     } else if (!treeInfos.empty()) {
         if (!ValidateElementInfos(treeInfos)) {
