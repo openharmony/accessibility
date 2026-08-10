@@ -28,6 +28,7 @@ ReadableRulesNode::~ReadableRulesNode() = default;
 
 bool ReadableRulesChecker::CheckInit(const std::string& readableRules)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     isChecked_ = true;
     if (!IsInited()) {
         Init(readableRules);
@@ -45,7 +46,7 @@ void ReadableRulesChecker::Init(const std::string& rules)
     isInited_ = false;
 
     nlohmann::json jsonRoot = nlohmann::json::parse(rules, nullptr, false);
-    if (jsonRoot.is_null() || jsonRoot.is_discarded()) {
+    if (jsonRoot.is_null() || jsonRoot.is_discarded() || !jsonRoot.is_object()) {
         return;
     }
 

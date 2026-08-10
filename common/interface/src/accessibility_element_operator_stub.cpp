@@ -18,6 +18,7 @@
 #include "accessibility_element_info_parcel.h"
 #include "accessibility_virtual_node_parcel.h"
 #include "hilog_wrapper.h"
+#include "accessibility_constants.h"
 #include <cinttypes>
 
 #define SWITCH_BEGIN(code) switch (code) {
@@ -447,6 +448,10 @@ ErrCode AccessibilityElementOperatorStub::HandleAddAccessibilityVirtualNode(Mess
     HILOG_DEBUG();
     int64_t rootId = data.ReadInt64();
     int32_t nodeCount = data.ReadInt32();
+    if (nodeCount < 0 || nodeCount > MAX_ALLOW_SIZE) {
+        HILOG_ERROR("nodeCount is invalid: %{public}d", nodeCount);
+        return ERR_INVALID_VALUE;
+    }
     std::vector<AccessibilityVirtualNode> nodes;
     for (int32_t i = 0; i < nodeCount; i++) {
         sptr<AccessibilityVirtualNodeParcel> nodeParcel = data.ReadStrongParcelable<AccessibilityVirtualNodeParcel>();

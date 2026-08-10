@@ -24,6 +24,14 @@ ElementOperatorCallbackImpl::ElementOperatorCallbackImpl(int32_t accountId) : ac
 {
 }
 
+void ElementOperatorCallbackImpl::SetPromiseValue()
+{
+    bool expected = false;
+    if (promiseSet_.compare_exchange_strong(expected, true)) {
+        promise_.set_value();
+    }
+}
+
 void ElementOperatorCallbackImpl::SetFindFocusedElementInfoResult(
     const AccessibilityElementInfo &info, const int32_t requestId)
 {
@@ -32,10 +40,10 @@ void ElementOperatorCallbackImpl::SetFindFocusedElementInfoResult(
         info.GetAccessibilityId(), accountId_) == RET_OK) {
         HILOG_DEBUG("VerifyingToKenId ok");
         accessibilityInfoResult_ = info;
-        promise_.set_value();
+        SetPromiseValue();
     } else {
         HILOG_ERROR("VerifyingToKenId failed");
-        promise_.set_value();
+        SetPromiseValue();
     }
 }
 
@@ -43,38 +51,38 @@ void ElementOperatorCallbackImpl::SetSearchElementInfoByTextResult(
     const std::vector<AccessibilityElementInfo> &infos, const int32_t requestId)
 {
     HILOG_DEBUG("Response [requestId:%{public}d]", requestId);
-    for (auto info : infos) {
-        if (Singleton<AccessibleAbilityManagerService>::GetInstance().VerifyingToKenId(info.GetWindowId(),
-            info.GetAccessibilityId(), accountId_) == RET_OK) {
-            HILOG_DEBUG("VerifyingToKenId ok");
-        } else {
-            HILOG_ERROR("VerifyingToKenId failed");
-            elementInfosResult_.clear();
-            promise_.set_value();
-            return;
+    if (!infos.empty()) {
+        for (auto info : infos) {
+            if (Singleton<AccessibleAbilityManagerService>::GetInstance().VerifyingToKenId(info.GetWindowId(),
+                info.GetAccessibilityId(), accountId_) != RET_OK) {
+                HILOG_ERROR("VerifyingToKenId failed");
+                elementInfosResult_.clear();
+                SetPromiseValue();
+                return;
+            }
         }
         elementInfosResult_ = infos;
     }
-    promise_.set_value();
+    SetPromiseValue();
 }
 
 void ElementOperatorCallbackImpl::SetSearchElementInfoByAccessibilityIdResult(
     const std::vector<AccessibilityElementInfo> &infos, const int32_t requestId)
 {
     HILOG_DEBUG("Response [requestId:%{public}d]", requestId);
-    for (auto info : infos) {
-        if (Singleton<AccessibleAbilityManagerService>::GetInstance().VerifyingToKenId(info.GetWindowId(),
-            info.GetAccessibilityId(), accountId_) == RET_OK) {
-            HILOG_DEBUG("VerifyingToKenId ok");
-        } else {
-            HILOG_ERROR("VerifyingToKenId failed");
-            elementInfosResult_.clear();
-            promise_.set_value();
-            return;
+    if (!infos.empty()) {
+        for (auto info : infos) {
+            if (Singleton<AccessibleAbilityManagerService>::GetInstance().VerifyingToKenId(info.GetWindowId(),
+                info.GetAccessibilityId(), accountId_) != RET_OK) {
+                HILOG_ERROR("VerifyingToKenId failed");
+                elementInfosResult_.clear();
+                SetPromiseValue();
+                return;
+            }
         }
         elementInfosResult_ = infos;
     }
-    promise_.set_value();
+    SetPromiseValue();
 }
 
 void ElementOperatorCallbackImpl::SetSearchElementInfoBySpecificPropertyResult(
@@ -93,7 +101,7 @@ void ElementOperatorCallbackImpl::SetSearchElementInfoBySpecificPropertyResult(
         }
         elementInfosResult_.assign(treeInfos.begin(), treeInfos.end());
     }
-    promise_.set_value();
+    SetPromiseValue();
 }
 
 void ElementOperatorCallbackImpl::SetFocusMoveSearchWithConditionResult(
@@ -108,7 +116,7 @@ void ElementOperatorCallbackImpl::SetFocusMoveSearchWithConditionResult(
     parentWindowId_ = result.parentWindowId;
     changeToNewInfo_ = result.changeToNewInfo;
     needTerminate_ = result.needTerminate;
-    promise_.set_value();
+    SetPromiseValue();
 }
 
 bool ElementOperatorCallbackImpl::ValidateElementInfos(
@@ -121,7 +129,7 @@ bool ElementOperatorCallbackImpl::ValidateElementInfos(
         } else {
             HILOG_ERROR("VerifyingToKenId failed");
             elementInfosResult_.clear();
-            promise_.set_value();
+            SetPromiseValue();
             return false;
         }
     }
@@ -136,10 +144,10 @@ void ElementOperatorCallbackImpl::SetFocusMoveSearchResult(
         info.GetAccessibilityId(), accountId_) == RET_OK) {
         HILOG_DEBUG("VerifyingToKenId ok");
         accessibilityInfoResult_ = info;
-        promise_.set_value();
+        SetPromiseValue();
     } else {
         HILOG_ERROR("VerifyingToKenId failed");
-        promise_.set_value();
+        SetPromiseValue();
     }
 }
 
@@ -148,7 +156,7 @@ void ElementOperatorCallbackImpl::SetExecuteActionResult(const bool succeeded,
 {
     HILOG_DEBUG("Response [result:%{public}d, requestId:%{public}d]", succeeded, requestId);
     executeActionResult_ = succeeded;
-    promise_.set_value();
+    SetPromiseValue();
 }
 
 void ElementOperatorCallbackImpl::SetCursorPositionResult(const int32_t cursorPosition,
@@ -158,7 +166,7 @@ void ElementOperatorCallbackImpl::SetCursorPositionResult(const int32_t cursorPo
         cursorPosition);
     HILOG_DEBUG("cursorPosition [result:%{public}d, requestId:%{public}d]", cursorPosition, requestId);
     callCursorPosition_ = cursorPosition;
-    promise_.set_value();
+    SetPromiseValue();
 }
 
 void ElementOperatorCallbackImpl::SetSearchDefaultFocusByWindowIdResult(
@@ -172,12 +180,12 @@ void ElementOperatorCallbackImpl::SetSearchDefaultFocusByWindowIdResult(
         } else {
             HILOG_ERROR("VerifyingToKenId failed");
             elementInfosResult_.clear();
-            promise_.set_value();
+            SetPromiseValue();
             return;
         }
-        elementInfosResult_ = infos;
     }
-    promise_.set_value();
+    elementInfosResult_ = infos;
+    SetPromiseValue();
 }
 
 void ElementOperatorCallbackImpl::SetUpdateCustomAccessibilityPropertyResult(
@@ -185,7 +193,7 @@ void ElementOperatorCallbackImpl::SetUpdateCustomAccessibilityPropertyResult(
 {
     HILOG_DEBUG("Response [requestId:%{public}d]", requestId);
     operateVirtualNodeResult_ = result;
-    promise_.set_value();
+    SetPromiseValue();
 }
 
 void ElementOperatorCallbackImpl::SetAddAccessibilityVirtualNodeResult(
@@ -193,7 +201,7 @@ void ElementOperatorCallbackImpl::SetAddAccessibilityVirtualNodeResult(
 {
     HILOG_DEBUG("Response [requestId:%{public}d]", requestId);
     operateVirtualNodeResult_ = result;
-    promise_.set_value();
+    SetPromiseValue();
 }
 
 void ElementOperatorCallbackImpl::SetRemoveAccessibilityVirtualNodeResult(
@@ -201,7 +209,7 @@ void ElementOperatorCallbackImpl::SetRemoveAccessibilityVirtualNodeResult(
 {
     HILOG_DEBUG("Response [requestId:%{public}d]", requestId);
     operateVirtualNodeResult_ = result;
-    promise_.set_value();
+    SetPromiseValue();
 }
 } // namespace Accessibility
 } // namespace OHOS
