@@ -2898,22 +2898,8 @@ RetError NAccessibilityElement::RunFindElementAsync(NAPICbInfo& cbInfo, NAccessi
 
     napi_value resource = nullptr;
     napi_create_string_utf8(elementData->env_, "FindElement", NAPI_AUTO_LENGTH, &resource);
-    napi_status napiRet = napi_create_async_work(elementData->env_, nullptr, resource, FindElementExecute,
+    napi_create_async_work(elementData->env_, nullptr, resource, FindElementExecute,
         FindElementComplete, reinterpret_cast<void*>(elementData), &elementData->work_);
-        if (napiRet != napi_ok) {
-        HILOG_ERROR("napi_create_async_work failed for FindElement");
-        if (elementData->callback_ != nullptr) {
-            napi_delete_reference(elementData->env_, elementData->callback_);
-            elementData->callback_ = nullptr;
-        }
-        if (elementData->deferred_ != nullptr) {
-            napi_reject_deferred(elementData->env_, elementData->deferred_, nullptr);
-            elementData->deferred_ = nullptr;
-        }
-        delete elementData;
-        elementData = nullptr;
-        return RetError::RET_ERR_FAILED;
-    }
     napi_queue_async_work_with_qos(elementData->env_, elementData->work_, napi_qos_user_initiated);
 
     return RetError::RET_OK;
@@ -2924,22 +2910,8 @@ RetError NAccessibilityElement::RunAttributeValueAsync(NAPICbInfo& cbInfo, NAcce
 {
     napi_value resource = nullptr;
     napi_create_string_utf8(elementData->env_, "AttributeValue", NAPI_AUTO_LENGTH, &resource);
-    napi_status napiRet = napi_create_async_work(elementData->env_, nullptr, resource, AttributeValueExecute,
+    napi_create_async_work(elementData->env_, nullptr, resource, AttributeValueExecute,
         AttributeValueComplete, reinterpret_cast<void*>(elementData), &elementData->work_);
-        if (napiRet != napi_ok) {
-        HILOG_ERROR("napi_create_async_work failed for AttributeValue");
-        if (elementData->callback_ != nullptr) {
-            napi_delete_reference(elementData->env_, elementData->callback_);
-            elementData->callback_ = nullptr;
-        }
-        if (elementData->deferred_ != nullptr) {
-            napi_reject_deferred(elementData->env_, elementData->deferred_, nullptr);
-            elementData->deferred_ = nullptr;
-        }
-        delete elementData;
-        elementData = nullptr;
-        return RetError::RET_ERR_FAILED;
-    }
     napi_queue_async_work_with_qos(elementData->env_, elementData->work_, napi_qos_user_initiated);
 
     return RetError::RET_OK;
