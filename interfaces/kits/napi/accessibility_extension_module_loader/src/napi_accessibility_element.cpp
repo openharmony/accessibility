@@ -356,7 +356,6 @@ void NAccessibilityElement::ConvertElementInfoToJS(napi_env env, napi_value resu
         delete pAccessibilityElement;
         pAccessibilityElement = nullptr;
         HILOG_ERROR("failed to wrap JS object");
-        return;
     }
     HILOG_DEBUG("napi_wrap status: %{public}d", (int)sts);
 }
