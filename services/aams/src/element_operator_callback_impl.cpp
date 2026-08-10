@@ -108,9 +108,6 @@ void ElementOperatorCallbackImpl::SetFocusMoveSearchWithConditionResult(
     const std::list<AccessibilityElementInfo> &infos, const FocusMoveResult& result, const int32_t requestId)
 {
     if (!infos.empty()) {
-        if (!ValidateElementInfos(infos)) {
-            return;
-        }
         elementInfosResult_.assign(infos.begin(), infos.end());
     }
     HILOG_DEBUG("Response [requestId:%{public}d]", requestId);
