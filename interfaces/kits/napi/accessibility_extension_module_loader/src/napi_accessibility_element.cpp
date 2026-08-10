@@ -2552,14 +2552,6 @@ napi_value NAccessibilityElement::FindElementsByCondition(napi_env env, napi_cal
     auto ret = napi_create_async_work(callbackInfo->env_, nullptr, resource, FindElementsByConditionExecute,
         FindElementsByConditionComplete, reinterpret_cast<void*>(callbackInfo), &callbackInfo->work_);
     if (ret != napi_ok) {
-        if (callbackInfo->callback_ != nullptr) {
-            napi_delete_reference(env, callbackInfo->callback_);
-            callbackInfo->callback_ = nullptr;
-        }
-        if (callbackInfo->deferred_ != nullptr) {
-            napi_reject_deferred(env, callbackInfo->deferred_, nullptr);
-            callbackInfo->deferred_ = nullptr;
-        }
         delete callbackInfo;
         callbackInfo = nullptr;
         return nullptr;
