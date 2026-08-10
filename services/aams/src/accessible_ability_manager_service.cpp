@@ -1102,7 +1102,7 @@ ErrCode AccessibleAbilityManagerService::SetCaptionProperty(const CaptionPropert
         HILOG_WARN("Not system app");
         return RET_ERR_NOT_SYSTEM_APP;
     }
-    if (!CheckPermission(OHOS_PERMISSION_WRITE_ACCESSIBILITY_CONFIG)) {
+    if (isPermissionRequired && !CheckPermission(OHOS_PERMISSION_WRITE_ACCESSIBILITY_CONFIG)) {
         HILOG_WARN("SetCaptionProperty permission denied.");
         return RET_ERR_NO_PERMISSION;
     }
