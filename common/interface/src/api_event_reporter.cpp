@@ -47,7 +47,6 @@ ApiEventReporter::~ApiEventReporter()
 // LCOV_EXCL_START
 bool ApiEventReporter::IsAppEventProcessorValid()
 {
-    std::lock_guard<std::mutex> lock(g_apiOperationMutex);
     if (g_processorId <= NULLPTR_PROCCESSORID) {
         g_processorId = AddProcessor();
     }
@@ -229,6 +228,7 @@ void ApiEventReporter::ParseApiOperationManagement(std::istringstream &stream, A
 int64_t ApiEventReporter::AddProcessor()
 {
     HILOG_INFO("AddProcessor enter.");
+    std::lock_guard<std::mutex> lock(g_apiOperationMutex);
     ApiReportConfig reportConfig;
     ApiEventConfig eventConfig;
     if (g_fileContent.empty()) {
