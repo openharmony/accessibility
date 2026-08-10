@@ -348,6 +348,7 @@ void NAccessibilityElement::ConvertElementInfoToJS(napi_env env, napi_value resu
             AccessibilityElement* info = static_cast<AccessibilityElement*>(data);
             if (info != nullptr) {
                 delete info;
+                info = nullptr;
             }
         },
         nullptr,
