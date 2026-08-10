@@ -1483,8 +1483,18 @@ void ANIAccessibilityConfig::OffSeniorModeStateChangeForApps(ani_env *env)
 ani_boolean ANIAccessibilityConfig::GetSeniorModeStateForApp(ani_env *env, ani_string bundleName, ani_int appIndex)
 {
     HILOG_INFO("getSeniorModeStateForApp");
+    if (bundleName == nullptr) {
+        HILOG_ERROR("bundleName is nullptr");
+        ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(RetError::RET_ERR_INVALID_PARAM));
+        return static_cast<ani_boolean>(false);
+    }
     bool state = false;
     std::string bundleNameStr = ANIUtils::ANIStringToStdString(env, bundleName);
+    if (bundleNameStr.empty()) {
+        HILOG_ERROR("bundleName is empty");
+        ANIUtils::ThrowBusinessError(env, ANIUtils::QueryRetMsg(RetError::RET_ERR_INVALID_PARAM));
+        return static_cast<ani_boolean>(false);
+    }
     int32_t appIndexInt = static_cast<int32_t>(appIndex);
     auto &instance = OHOS::AccessibilityConfig::AccessibilityConfig::GetInstance();
     OHOS::Accessibility::RetError ret = instance.GetSeniorModeStateForApp(bundleNameStr, appIndexInt, state);

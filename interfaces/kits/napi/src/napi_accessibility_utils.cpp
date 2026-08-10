@@ -33,13 +33,13 @@ namespace {
     const uint32_t COLOR_TRANSPARENT = 0x00000000;
     const std::string HALF_VALUE = "0";
     const std::string FULL_VALUE = "1";
-    napi_status status = napi_ok;
 } // namespace
 using namespace OHOS::Accessibility;
 using namespace OHOS::AccessibilityConfig;
 
 napi_status ParseResourceIdFromNAPI(napi_env env, napi_value value, uint32_t &idValue)
 {
+    napi_status status = napi_ok;
     bool hasProperty = false;
     napi_value propertyName = nullptr;
     status = napi_create_string_utf8(env, "id", NAPI_AUTO_LENGTH, &propertyName);
@@ -62,6 +62,7 @@ napi_status ParseResourceIdFromNAPI(napi_env env, napi_value value, uint32_t &id
 napi_status ParseResourceBundleNameFromNAPI(napi_env env, napi_value value,
     std::string &bundleNameValue)
 {
+    napi_status status = napi_ok;
     bool hasProperty = false;
     napi_value propertyName = nullptr;
     status = napi_create_string_utf8(env, "bundleName", NAPI_AUTO_LENGTH, &propertyName);
@@ -87,6 +88,7 @@ napi_status ParseResourceBundleNameFromNAPI(napi_env env, napi_value value,
 
 napi_status ParseSeniorModeStateFromNAPI(napi_env env, napi_value value, bool &state)
 {
+    napi_status status = napi_ok;
     bool hasProperty = false;
     napi_value propertyName = nullptr;
     status = napi_create_string_utf8(env, "seniorModeState", NAPI_AUTO_LENGTH, &propertyName);
@@ -111,6 +113,7 @@ napi_status ParseSeniorModeStateFromNAPI(napi_env env, napi_value value, bool &s
 
 napi_status ParseAppIndexFromNAPI(napi_env env, napi_value value, int32_t &appIndex)
 {
+    napi_status status = napi_ok;
     bool hasProperty = false;
     napi_value propertyName = nullptr;
     status = napi_create_string_utf8(env, "appIndex", NAPI_AUTO_LENGTH, &propertyName);
@@ -136,6 +139,7 @@ napi_status ParseAppIndexFromNAPI(napi_env env, napi_value value, int32_t &appIn
 napi_status ParseResourceModuleNameFromNAPI(napi_env env, napi_value value,
     std::string &moduleNameValue)
 {
+    napi_status status = napi_ok;
     bool hasProperty = false;
     napi_value propertyName = nullptr;
     status = napi_create_string_utf8(env, "moduleName", NAPI_AUTO_LENGTH, &propertyName);
@@ -162,6 +166,7 @@ napi_status ParseResourceModuleNameFromNAPI(napi_env env, napi_value value,
 napi_status ParseResourceParamsFromNAPI(napi_env env, napi_value value,
     std::vector<std::tuple<int32_t, std::string>> &resourceParamsValue)
 {
+    napi_status status = napi_ok;
     bool hasProperty = false;
     napi_value propertyName = nullptr;
     napi_valuetype valueType = napi_undefined;

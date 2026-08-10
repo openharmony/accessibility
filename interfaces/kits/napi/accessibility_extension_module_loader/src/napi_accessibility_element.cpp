@@ -346,8 +346,10 @@ void NAccessibilityElement::ConvertElementInfoToJS(napi_env env, napi_value resu
         pAccessibilityElement,
         [](napi_env env, void* data, void* hint) {
             AccessibilityElement* info = static_cast<AccessibilityElement*>(data);
-            delete info;
-            info = nullptr;
+            if (info != nullptr) {
+                delete info;
+                info = nullptr;
+            }
         },
         nullptr,
         nullptr);
@@ -463,6 +465,14 @@ napi_value NAccessibilityElement::AttributeNames(napi_env env, napi_callback_inf
         reinterpret_cast<void*>(callbackInfo),
         &callbackInfo->work_);
     if (ret != napi_ok) {
+        if (callbackInfo->callback_ != nullptr) {
+            napi_delete_reference(env, callbackInfo->callback_);
+            callbackInfo->callback_ = nullptr;
+        }
+        if (callbackInfo->deferred_ != nullptr) {
+            napi_reject_deferred(env, callbackInfo->deferred_, nullptr);
+            callbackInfo->deferred_ = nullptr;
+        }
         delete callbackInfo;
         callbackInfo = nullptr;
         return nullptr;
@@ -548,8 +558,6 @@ napi_value NAccessibilityElement::AttributeValue(napi_env env, napi_callback_inf
     if (errCode == NAccessibilityErrorCode::ACCESSIBILITY_ERROR_INVALID_PARAM) {
         delete callbackInfo;
         callbackInfo = nullptr;
-        delete accessibilityElement;
-        accessibilityElement = nullptr;
         napi_value err = CreateBusinessError(env, RetError::RET_ERR_INVALID_PARAM);
         HILOG_ERROR("invalid param");
         napi_throw(env, err);
@@ -603,6 +611,14 @@ napi_value NAccessibilityElement::AttributeValueAsync(
     auto ret = napi_create_async_work(env, nullptr, resource, NAccessibilityElement::AttributeValueExecute,
         NAccessibilityElement::AttributeValueComplete, reinterpret_cast<void*>(callbackInfo), &callbackInfo->work_);
     if (ret != napi_ok) {
+        if (callbackInfo->callback_ != nullptr) {
+            napi_delete_reference(env, callbackInfo->callback_);
+            callbackInfo->callback_ = nullptr;
+        }
+        if (callbackInfo->deferred_ != nullptr) {
+            napi_reject_deferred(env, callbackInfo->deferred_, nullptr);
+            callbackInfo->deferred_ = nullptr;
+        }
         delete callbackInfo;
         callbackInfo = nullptr;
         return nullptr;
@@ -2115,6 +2131,14 @@ napi_value NAccessibilityElement::ActionNames(napi_env env, napi_callback_info i
         reinterpret_cast<void*>(callbackInfo),
         &callbackInfo->work_);
     if (ret != napi_ok) {
+        if (callbackInfo->callback_ != nullptr) {
+            napi_delete_reference(env, callbackInfo->callback_);
+            callbackInfo->callback_ = nullptr;
+        }
+        if (callbackInfo->deferred_ != nullptr) {
+            napi_reject_deferred(env, callbackInfo->deferred_, nullptr);
+            callbackInfo->deferred_ = nullptr;
+        }
         delete callbackInfo;
         callbackInfo = nullptr;
         return nullptr;
@@ -2231,8 +2255,6 @@ napi_value NAccessibilityElement::PerformAction(napi_env env, napi_callback_info
     if (argc < ARGS_SIZE_ONE || !ParseString(env, actionName, argv[PARAM0])) {
         HILOG_ERROR("argc is invalid: %{public}zu", argc);
         errCode = NAccessibilityErrorCode::ACCESSIBILITY_ERROR_INVALID_PARAM;
-        delete accessibilityElement;
-        accessibilityElement = nullptr;
         napi_value err = CreateBusinessError(env, RetError::RET_ERR_INVALID_PARAM);
         HILOG_ERROR("invalid param");
         napi_throw(env, err);
@@ -2267,8 +2289,6 @@ napi_value NAccessibilityElement::ExecuteAction(napi_env env, napi_callback_info
         action < 0 || static_cast<uint32_t>(action) >= ACTION_NAMES.size()) {
         HILOG_ERROR("parameter is invalid: argc=%{public}zu, action=%{public}d", argc, action);
         errCode = NAccessibilityErrorCode::ACCESSIBILITY_ERROR_INVALID_PARAM;
-        delete accessibilityElement;
-        accessibilityElement = nullptr;
         napi_value err = CreateBusinessError(env, RetError::RET_ERR_INVALID_PARAM);
         HILOG_ERROR("invalid param");
         napi_throw(env, err);
@@ -2364,6 +2384,14 @@ napi_value NAccessibilityElement::PerformActionConstructPromise(napi_env env, si
     auto ret = napi_create_async_work(env, nullptr, resource, PerformActionExecute, PerformActionComplete,
         reinterpret_cast<void*>(callbackInfo), &callbackInfo->work_);
     if (ret != napi_ok) {
+        if (callbackInfo->callback_ != nullptr) {
+            napi_delete_reference(env, callbackInfo->callback_);
+            callbackInfo->callback_ = nullptr;
+        }
+        if (callbackInfo->deferred_ != nullptr) {
+            napi_reject_deferred(env, callbackInfo->deferred_, nullptr);
+            callbackInfo->deferred_ = nullptr;
+        }
         delete callbackInfo;
         callbackInfo = nullptr;
         return nullptr;
@@ -2746,6 +2774,14 @@ napi_value NAccessibilityElement::FindElementByFocusDirection(napi_env env, napi
     auto ret = napi_create_async_work(callbackInfo->env_, nullptr, resource, FindElementExecute,
         FindElementComplete, reinterpret_cast<void*>(callbackInfo), &callbackInfo->work_);
     if (ret != napi_ok) {
+        if (callbackInfo->callback_ != nullptr) {
+            napi_delete_reference(env, callbackInfo->callback_);
+            callbackInfo->callback_ = nullptr;
+        }
+        if (callbackInfo->deferred_ != nullptr) {
+            napi_reject_deferred(env, callbackInfo->deferred_, nullptr);
+            callbackInfo->deferred_ = nullptr;
+        }
         delete callbackInfo;
         callbackInfo = nullptr;
         return nullptr;
@@ -2962,6 +2998,14 @@ napi_value NAccessibilityElement::GetCursorPositionAsync(napi_env env, size_t ar
     auto ret = napi_create_async_work(callbackInfo->env_, nullptr, resource, GetCursorPositionExecute,
         GetCursorPositionComplete, reinterpret_cast<void*>(callbackInfo), &callbackInfo->work_);
     if (ret != napi_ok) {
+        if (callbackInfo->callback_ != nullptr) {
+            napi_delete_reference(env, callbackInfo->callback_);
+            callbackInfo->callback_ = nullptr;
+        }
+        if (callbackInfo->deferred_ != nullptr) {
+            napi_reject_deferred(env, callbackInfo->deferred_, nullptr);
+            callbackInfo->deferred_ = nullptr;
+        }
         delete callbackInfo;
         callbackInfo = nullptr;
         return nullptr;
@@ -2994,6 +3038,14 @@ napi_value NAccessibilityElement::FindElementAsync(napi_env env, size_t argc, na
     auto ret = napi_create_async_work(callbackInfo->env_, nullptr, resource, FindElementExecute,
         FindElementComplete, reinterpret_cast<void*>(callbackInfo), &callbackInfo->work_);
     if (ret != napi_ok) {
+        if (callbackInfo->callback_ != nullptr) {
+            napi_delete_reference(env, callbackInfo->callback_);
+            callbackInfo->callback_ = nullptr;
+        }
+        if (callbackInfo->deferred_ != nullptr) {
+            napi_reject_deferred(env, callbackInfo->deferred_, nullptr);
+            callbackInfo->deferred_ = nullptr;
+        }
         delete callbackInfo;
         callbackInfo = nullptr;
         return nullptr;

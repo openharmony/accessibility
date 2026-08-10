@@ -18,6 +18,7 @@
 
 #include <set>
 #include <string>
+#include <mutex>
 
 #include "rules_defines.h"
 #include "custom_props.h"
@@ -69,6 +70,7 @@ private:
     bool ParseRules(const nlohmann::json& jsonRoot);
 
     void Init(const std::string& rules);
+    std::mutex mutex_;
     RulesDefines rulesDefines_;
     CustomProps customProps_;
     std::vector<ReadableRule> rules_;
