@@ -34,10 +34,10 @@ namespace OHOS {
 namespace Accessibility {
 namespace {
     constexpr float TAP_MIN_DISTANCE = 8.0f;
-    constexpr int32_t MULTI_FINGER_TAP_INTERVAL_TIMER = 100; // ms
-    constexpr int32_t MULTI_TAP_TIMER = 250; // ms
-    constexpr int32_t LONG_PRESS_TIMER = 300; // ms
-    constexpr int32_t TOUCH_EXPLORATION_ZOOM_DELAY_TIMER = 250; // ms
+    constexpr int32_t MULTI_FINGER_TAP_INTERVAL_TIMER = 200; // ms
+    constexpr int32_t MULTI_TAP_TIMER = 350; // ms
+    constexpr int32_t LONG_PRESS_TIMER = 400; // ms
+    constexpr int32_t TOUCH_EXPLORATION_ZOOM_DELAY_TIMER = 350; // ms
     constexpr float DOUBLE_TAP_SLOP = 100.0f;
     constexpr uint32_t DOUBLE_TAP_COUNT = 2;
     constexpr uint32_t TRIPLE_TAP_COUNT = 3;
@@ -1029,7 +1029,7 @@ void AccessibilityZoomGesture::HandleSTZoomInitStateDown(MMI::PointerEvent &even
         zoomGestureEventHandler_->SendEvent(MENU_SLIDING_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
     } else {
         zoomGestureEventHandler_->SendEvent(WAIT_ANOTHER_FINGER_DOWN_MSG, 0, MULTI_FINGER_TAP_INTERVAL_TIMER);
-        }
+    }
     zoomGestureEventHandler_->SendEvent(MULTI_TAP_MSG, 0, MULTI_TAP_TIMER);
     TransferState(ONE_FINGER_DOWN);
     }
