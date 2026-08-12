@@ -452,13 +452,20 @@ napi_value GetErrorValue(napi_env env, int errCode)
 bool CheckObserverEqual(napi_env env, napi_value observer, napi_env iterEnv, napi_ref iterRef)
 {
     HILOG_DEBUG();
+    if (iterEnv == nullptr || iterRef == nullptr) {
+        HILOG_ERROR("Invalid parameters");
+        return false;
+    }
     if (env != iterEnv) {
         return false;
     }
     HILOG_DEBUG("Same env, begin check observer equal");
     napi_value item = nullptr;
+    if (napi_get_reference_value(iterEnv, iterRef, &item) != napi_ok || item == nullptr) {
+        HILOG_ERROR("Failed to get reference value");
+        return false;
+    }
     bool equalFlag = false;
-    napi_get_reference_value(iterEnv, iterRef, &item);
     napi_status status = napi_strict_equals(iterEnv, item, observer, &equalFlag);
     if (status == napi_ok && equalFlag) {
         HILOG_DEBUG("Observer exist");
