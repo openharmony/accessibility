@@ -482,7 +482,8 @@ void NAccessibilityConfigObserverImpl::UnsubscribeObserver(napi_env env,
 
 void NAccessibilityConfigObserverImpl::UnsubscribeObservers(OHOS::AccessibilityConfig::CONFIG_ID id)
 {
-    HILOG_INFO();
+    HILOG_INFO("SubEvent op=off_all  kit=AccessibilityKit  event=%{public}s",
+        ConvertConfigIdToString(id).c_str());
     std::lock_guard<ffrt::mutex> lock(mutex_);
     for (auto iter = observers_.begin(); iter != observers_.end();) {
         if ((*iter)->configId_ == id) {
