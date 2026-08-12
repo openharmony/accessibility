@@ -1512,7 +1512,7 @@ void EnableAbilityListsObserverImpl::UnsubscribeObserver(napi_env env, napi_valu
 
 void EnableAbilityListsObserverImpl::UnsubscribeObservers()
 {
-    HILOG_DEBUG();
+    HILOG_INFO("SubEvent op=off_all  kit=AccessibilityKit  event=enabledAccessibilityExtensionListChange");
     std::lock_guard<ffrt::mutex> lock(mutex_);
     enableAbilityListsObservers_.clear();
 }
@@ -1531,7 +1531,7 @@ void EnableAbilityListsObserverImpl::UnsubscribeInstallObserver(napi_env env, na
 
 void EnableAbilityListsObserverImpl::UnsubscribeInstallObservers()
 {
-    HILOG_DEBUG();
+    HILOG_INFO("SubEvent op=off_all  kit=AccessibilityKit  event=installedAccessibilityListChange");
     std::lock_guard<ffrt::mutex> lock(mutex_);
     installAbilityListsObservers_.clear();
 }
