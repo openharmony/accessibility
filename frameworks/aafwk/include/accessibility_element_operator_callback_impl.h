@@ -18,6 +18,7 @@
 
 #include "accessibility_element_operator_callback_stub.h"
 #include "ffrt_inner.h"
+#include <atomic>
 
 namespace OHOS {
 namespace Accessibility {
@@ -131,7 +132,7 @@ public:
 
 private:
     ffrt::promise<void> promise_;
-    std::atomic<bool> promiseFlag_ = false;
+    std::atomic<bool> promiseSet_ {false};
     bool executeActionResult_ = false;
     AccessibilityElementInfo accessibilityInfoResult_ = {};
     std::vector<AccessibilityElementInfo> elementInfosResult_;
@@ -145,6 +146,7 @@ private:
     bool needTerminate_ = false;
     friend class AccessibleAbilityChannelClient;
     OperateVirtualNodeResult operateVirtualNodeResult_ = OperateVirtualNodeResult::VIRTUAL_NODE_NOT_SUPPORT;
+    void SetPromiseValue();
 };
 } // namespace Accessibility
 } // namespace OHOS
