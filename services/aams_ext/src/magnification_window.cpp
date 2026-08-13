@@ -573,6 +573,7 @@ bool MagnificationWindow::IsTapOnMagnificationWindow(int32_t posX, int32_t posY)
     std::lock_guard<ffrt::mutex> lock(mutex_);
     return ExtUtils::IsInRect(posX, posY, windowRect_);
 }
+
 void MagnificationWindow::FixSourceCenter(bool needFix)
 {
     HILOG_DEBUG();
