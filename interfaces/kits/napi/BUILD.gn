@@ -29,6 +29,7 @@ ohos_shared_library("accessibility_napi") {
     "../../../common/log/include",
     "./include",
     "../../../common/interface/include",
+    "../../innerkits/asacfwk/include",
   ]
 
   defines = [

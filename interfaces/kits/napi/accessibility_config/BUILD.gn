@@ -30,6 +30,7 @@ ohos_shared_library("config_napi") {
     "../include",
     "./include",
     "../../../../common/interface/include",
+    "../../../innerkits/asacfwk/include",
   ]
 
   defines = [
