@@ -2165,6 +2165,8 @@ napi_value NAccessibilityClient::SetSeniorModeStateForApp(napi_env env, napi_cal
     napi_get_cb_info(env, info, &argc, parameters, nullptr, nullptr);
     if (argc != ARGS_SIZE_ONE) {
         HILOG_ERROR("SetSeniorModeStateForApp argc is invalid: %{public}zu", argc);
+        napi_value err = CreateBusinessError(env, OHOS::Accessibility::RET_ERR_INVALID_PARAM);
+        napi_throw(env, err);
         return nullptr;
     }
     bool state = false;
@@ -2177,6 +2179,8 @@ napi_value NAccessibilityClient::SetSeniorModeStateForApp(napi_env env, napi_cal
     NAccessibilitySystemAbilityClient* callbackInfo = new(std::nothrow) NAccessibilitySystemAbilityClient();
     if (callbackInfo == nullptr) {
         HILOG_ERROR("Failed to create callbackInfo.");
+        napi_value err = CreateBusinessError(env, OHOS::Accessibility::RET_ERR_NULLPTR);
+        napi_throw(env, err);
         return nullptr;
     }
 
