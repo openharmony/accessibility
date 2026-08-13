@@ -24,6 +24,7 @@ config("accessibility_extension_module_config") {
     "../../../innerkits/acfwk/include",
     "include",
     "../include",
+    "../../../innerkits/asacfwk/include",
   ]
 
   defines = [
