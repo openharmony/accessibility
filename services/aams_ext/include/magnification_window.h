@@ -29,6 +29,7 @@
 #include "magnification_def.h"
 #include "display_manager.h"
 #include "ext_utils.h"
+#include "ffrt.h"
 
 namespace OHOS {
 namespace Accessibility {
@@ -51,17 +52,9 @@ public:
     bool IsTapOnHotArea(int32_t posX, int32_t posY);
     bool IsTapOnMagnificationWindow(int32_t posX, int32_t posY);
     void FixSourceCenter(bool needFix);
-    inline bool IsMagnificationWindowActivate() {
-        return isMagnificationWindowActivate_;
-    }
-    inline float GetScale()
-    {
-        return scale_;
-    }
-    inline void InitMagnificationParam(float scale)
-    {
-        scale_ = scale;
-    }
+    bool IsMagnificationWindowActivate();
+    float GetScale();
+    void InitMagnificationParam(float scale);
 
 private:
     // full magnification
@@ -139,6 +132,7 @@ private:
     bool isMagnificationShowPart_ = false;
     bool isMagnificationShowFull_ = false;
     bool isMagnificationWindowActivate_ = false;
+    ffrt::mutex mutex_;
 };
 } // namespace Accessibility
 } // namespace OHOS
