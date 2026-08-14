@@ -454,7 +454,11 @@ void NAccessibilityConfigObserverImpl::SubscribeObserver(napi_env env,
     }
 
     napi_ref handler = nullptr;
-    napi_create_reference(env, observer, 1, &handler);
+    napi_status status = napi_create_reference(env, observer, 1, &handler);
+    if (status != napi_ok || handler == nullptr) {
+        HILOG_ERROR("napi_create_reference failed");
+        return;
+    }
     std::shared_ptr<NAccessibilityConfigObserver> observerPtr =
         std::make_shared<NAccessibilityConfigObserver>(env, handler, id);
 
