@@ -1410,7 +1410,11 @@ void EnableAbilityListsObserverImpl::SubscribeObserver(napi_env env, napi_value 
     }
 
     napi_ref callback = nullptr;
-    napi_create_reference(env, observer, 1, &callback);
+    napi_status status = napi_create_reference(env, observer, 1, &callback);
+    if (status != napi_ok || callback == nullptr) {
+        HILOG_ERROR("napi_create_reference failed");
+        return;
+    }
     std::shared_ptr<EnableAbilityListsObserver> observerPtr =
         std::make_shared<EnableAbilityListsObserver>(env, callback);
 
@@ -1445,7 +1449,11 @@ void EnableAbilityCallbackObserverImpl::SubscribeObserver(napi_env env, const st
         return;
     }
     napi_ref notifyCallback = nullptr;
-    napi_create_reference(env, observer, 1, &notifyCallback);
+    napi_status status = napi_create_reference(env, observer, 1, &notifyCallback);
+    if (status != napi_ok || notifyCallback == nullptr) {
+        HILOG_ERROR("napi_create_reference failed");
+        return;
+    }
     std::shared_ptr<EnableAbilityCallbackObserver> observerPtr =
         std::make_shared<EnableAbilityCallbackObserver>(env, notifyCallback);
     enableAbilityCallbackObservers_[name] = observerPtr;
@@ -1488,7 +1496,11 @@ void EnableAbilityListsObserverImpl::SubscribeInstallObserver(napi_env env, napi
     }
 
     napi_ref callback = nullptr;
-    napi_create_reference(env, observer, 1, &callback);
+    napi_status status = napi_create_reference(env, observer, 1, &callback);
+    if (status != napi_ok || callback == nullptr) {
+        HILOG_ERROR("napi_create_reference failed");
+        return;
+    }
     std::shared_ptr<EnableAbilityListsObserver> observerPtr =
         std::make_shared<EnableAbilityListsObserver>(env, callback);
 
@@ -1948,7 +1960,11 @@ void SeniorModeStateObserverImpl::SubscribeObserver(napi_env env, napi_value obs
     }
 
     napi_ref callback = nullptr;
-    napi_create_reference(env, observer, 1, &callback);
+    napi_status status = napi_create_reference(env, observer, 1, &callback);
+    if (status != napi_ok || callback == nullptr) {
+        HILOG_ERROR("napi_create_reference failed");
+        return;
+    }
     std::shared_ptr<SeniorModeStateObserver> observerPtr =
         std::make_shared<SeniorModeStateObserver>(env, callback);
 
