@@ -30,9 +30,28 @@ MagnificationWindow& MagnificationWindow::GetInstance()
     return instance;
 }
 
+bool MagnificationWindow::IsMagnificationWindowActivate()
+{
+    std::lock_guard<ffrt::mutex> lock(mutex_);
+    return isMagnificationWindowActivate_;
+}
+
+float MagnificationWindow::GetScale()
+{
+    std::lock_guard<ffrt::mutex> lock(mutex_);
+    return scale_;
+}
+
+void MagnificationWindow::InitMagnificationParam(float scale)
+{
+    std::lock_guard<ffrt::mutex> lock(mutex_);
+    scale_ = scale;
+}
+
 // common
 PointerPos MagnificationWindow::GetSourceCenter()
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     PointerPos point = {0, 0};
     point.posX = sourceRect_.posX_ + static_cast<int32_t>(sourceRect_.width_ / DIVISOR_TWO);
     point.posY = sourceRect_.posY_ + static_cast<int32_t>(sourceRect_.height_ / DIVISOR_TWO);
@@ -41,6 +60,7 @@ PointerPos MagnificationWindow::GetSourceCenter()
 
 PointerPos MagnificationWindow::ConvertCoordinates(int32_t posX, int32_t posY)
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     PointerPos sourcePoint = {0, 0};
     if ((abs(scale_) < EPS)) {
         return sourcePoint;
@@ -174,6 +194,7 @@ void MagnificationWindow::DisableMagnification(bool needClear)
 // full magnification
 PointerPos MagnificationWindow::ConvertGesture(uint32_t type, PointerPos coordinates)
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     int32_t posX = coordinates.posX;
     int32_t posY = coordinates.posY;
     PointerPos point = {posX, posY};
@@ -202,6 +223,7 @@ PointerPos MagnificationWindow::ConvertGesture(uint32_t type, PointerPos coordin
 
 uint32_t MagnificationWindow::CheckTapOnHotArea(int32_t posX, int32_t posY)
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     bool isTapOnBottom =
         posY <= static_cast<int32_t>(screenHeight_) && posY >= static_cast<int32_t>(screenHeight_) - GESTURE_OFFSET;
     if (isTapOnBottom) {
@@ -531,6 +553,7 @@ void MagnificationWindow::AdjustSourceWindowPosition()
 
 bool MagnificationWindow::IsTapOnHotArea(int32_t posX, int32_t posY)
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     if (!isMagnificationShowPart_) {
         return false;
     }
@@ -547,11 +570,14 @@ bool MagnificationWindow::IsTapOnHotArea(int32_t posX, int32_t posY)
 
 bool MagnificationWindow::IsTapOnMagnificationWindow(int32_t posX, int32_t posY)
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     return ExtUtils::IsInRect(posX, posY, windowRect_);
 }
+
 void MagnificationWindow::FixSourceCenter(bool needFix)
 {
     HILOG_DEBUG();
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     if (needFix == isFixSourceCenter_) {
         return;
     }
@@ -802,6 +828,7 @@ PointerPos MagnificationWindow::TransferCenter(RotationType type, PointerPos cen
 
 void MagnificationWindow::EnableMagnification(uint32_t magnificationType, int32_t posX, int32_t posY)
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     isMagnificationWindowActivate_ = true;
     if (magnificationType == FULL_SCREEN_MAGNIFICATION) {
         EnableMagnificationFull(posX, posY);
@@ -816,6 +843,7 @@ void MagnificationWindow::EnableMagnification(uint32_t magnificationType, int32_
 
 void MagnificationWindow::DisableMagnification(uint32_t magnificationType, bool needClear)
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     isMagnificationWindowActivate_ = false;
     if (magnificationType == FULL_SCREEN_MAGNIFICATION) {
         DisableMagnificationFull(needClear);
@@ -830,6 +858,7 @@ void MagnificationWindow::DisableMagnification(uint32_t magnificationType, bool 
 
 void MagnificationWindow::SetScale(uint32_t magnificationType, float ratio)
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     if (magnificationType == FULL_SCREEN_MAGNIFICATION) {
         SetScaleFull(ratio);
         return;
@@ -843,6 +872,7 @@ void MagnificationWindow::SetScale(uint32_t magnificationType, float ratio)
 
 void MagnificationWindow::MoveMagnification(uint32_t magnificationType, int32_t deltaX, int32_t deltaY)
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     if (magnificationType == FULL_SCREEN_MAGNIFICATION) {
         MoveMagnificationFull(deltaX, deltaY);
         return;
@@ -856,6 +886,7 @@ void MagnificationWindow::MoveMagnification(uint32_t magnificationType, int32_t 
 
 bool MagnificationWindow::IsMagnificationWindowShow(uint32_t magnificationType)
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     if (magnificationType == FULL_SCREEN_MAGNIFICATION) {
         return IsMagnificationShowFull();
     }
@@ -868,6 +899,7 @@ bool MagnificationWindow::IsMagnificationWindowShow(uint32_t magnificationType)
 
 void MagnificationWindow::FollowFocuseElement(uint32_t magnificationType, int32_t centerX, int32_t centerY)
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     if (magnificationType == FULL_SCREEN_MAGNIFICATION) {
         FollowFocuseElementFull(centerX, centerY);
         return;
@@ -881,6 +913,7 @@ void MagnificationWindow::FollowFocuseElement(uint32_t magnificationType, int32_
 
 void MagnificationWindow::ShowMagnification(uint32_t magnificationType)
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     if (magnificationType == FULL_SCREEN_MAGNIFICATION) {
         ShowMagnificationFull();
         return;
@@ -894,6 +927,7 @@ void MagnificationWindow::ShowMagnification(uint32_t magnificationType)
 
 void MagnificationWindow::RefreshWindowParam(uint32_t magnificationType, RotationType type)
 {
+    std::lock_guard<ffrt::mutex> lock(mutex_);
     if (magnificationType == FULL_SCREEN_MAGNIFICATION) {
         RefreshWindowParamFull(type);
         return;
