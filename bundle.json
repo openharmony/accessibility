@@ -62,6 +62,7 @@
         "data_share",
         "resource_management",
         "i18n",
+        "icu",
         "hiappevent",
         "e2fsprogs",
         "resource_schedule_service",
