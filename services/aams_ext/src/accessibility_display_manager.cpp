@@ -342,8 +342,6 @@ void AccessibilityDisplayManager::DisplayListener::OnChangeForBigFold(
         }
         displayMode_ = currentMode;
     }
-
-
 }
 
 void AccessibilityDisplayManager::DisplayListener::OnChangeDefault(
