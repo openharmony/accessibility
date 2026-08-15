@@ -15,6 +15,8 @@
 
 #include "accessibility_utils.h"
 #include "accessibility_def.h"
+#include "accessibility_state_event.h"
+#include "accessibility_config.h"
 
 #include <charconv>
 #include <cmath>
@@ -2190,6 +2192,59 @@ bool ConvertStringToInt64(std::string &str, int64_t &value)
 {
     auto [ptr, errCode] = std::from_chars(str.data(), str.data() + str.size(), value);
     return errCode == std::errc{} && ptr == str.data() + str.size();
+}
+
+std::string ConvertStateEventTypeToString(OHOS::Accessibility::AccessibilityStateEventType type)
+{
+    static const std::map<AccessibilityStateEventType, const std::string> stateEventTable = {
+        {AccessibilityStateEventType::EVENT_ACCESSIBILITY_STATE_CHANGED, "accessibilityStateChange"},
+        {AccessibilityStateEventType::EVENT_TOUCH_GUIDE_STATE_CHANGED, "touchGuideStateChange"},
+        {AccessibilityStateEventType::EVENT_SCREEN_READER_STATE_CHANGED, "screenReaderStateChange"},
+        {AccessibilityStateEventType::EVENT_TOUCH_MODE_CHANGED, "touchModeChange"},
+        {AccessibilityStateEventType::EVENT_AUDIO_MONO, "audioMonoStateChange"},
+        {AccessibilityStateEventType::EVENT_ANIMATION_OFF, "animationReduceStateChange"},
+        {AccessibilityStateEventType::EVENT_FLASH_REMINDER_SWITCH, "flashReminderStateChange"},
+        {AccessibilityStateEventType::EVENT_ELDER_CARE_ENABLED, "seniorModeStateChange"},
+        {AccessibilityStateEventType::EVENT_SELF_SENIOR_MODE_STATE_CHANGE, "seniorModeStateChangeForSelf"},
+    };
+
+    if (stateEventTable.find(type) == stateEventTable.end()) {
+        return "";
+    }
+
+    return stateEventTable.at(type);
+}
+
+std::string ConvertConfigIdToString(CONFIG_ID configId)
+{
+    static const std::map<CONFIG_ID, const std::string> configIdTable = {
+        {CONFIG_HIGH_CONTRAST_TEXT, "highContrastText"},
+        {CONFIG_INVERT_COLOR, "invertColor"},
+        {CONFIG_DALTONIZATION_COLOR_FILTER, "daltonizationColorFilter"},
+        {CONFIG_CONTENT_TIMEOUT, "contentTimeout"},
+        {CONFIG_ANIMATION_OFF, "animationOff"},
+        {CONFIG_BRIGHTNESS_DISCOUNT, "brightnessDiscount"},
+        {CONFIG_AUDIO_MONO, "audioMono"},
+        {CONFIG_AUDIO_BALANCE, "audioBalance"},
+        {CONFIG_MOUSE_KEY, "mouseKey"},
+        {CONFIG_SHORT_KEY, "shortkey"},
+        {CONFIG_CAPTION_STATE, "captions"},
+        {CONFIG_CAPTION_STYLE, "captionsStyle"},
+        {CONFIG_SCREEN_MAGNIFICATION, "screenMagnification"},
+        {CONFIG_SHORT_KEY_TARGET, "shortkeyTarget"},
+        {CONFIG_MOUSE_AUTOCLICK, "mouseAutoClick"},
+        {CONFIG_DALTONIZATION_STATE, "daltonizationState"},
+        {CONFIG_CLICK_RESPONSE_TIME, "clickResponseTime"},
+        {CONFIG_IGNORE_REPEAT_CLICK_STATE, "ignoreRepeatClick"},
+        {CONFIG_IGNORE_REPEAT_CLICK_TIME, "repeatClickInterval"},
+        {CONFIG_SHORT_KEY_MULTI_TARGET, "shortkeyMultiTargets"}
+    };
+
+    if (configIdTable.find(configId) == configIdTable.end()) {
+        return "";
+    }
+
+    return configIdTable.at(configId);
 }
 } // namespace AccessibilityNapi
 } // namespace OHOS

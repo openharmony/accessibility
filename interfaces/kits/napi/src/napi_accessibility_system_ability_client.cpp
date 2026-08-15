@@ -2049,7 +2049,8 @@ void StateListenerImpl::UnsubscribeObserver(napi_env env, napi_value observer)
 
 void StateListenerImpl::UnsubscribeObservers()
 {
-    HILOG_INFO();
+    HILOG_INFO("SubEvent op=off_all  kit=AccessibilityKit  event=%{public}s",
+        ConvertStateEventTypeToString(type_).c_str());
     std::lock_guard<ffrt::mutex> lock(mutex_);
     for (auto iter = observers_.begin(); iter != observers_.end();) {
         DeleteObserverReference((*iter)->env_, *iter);

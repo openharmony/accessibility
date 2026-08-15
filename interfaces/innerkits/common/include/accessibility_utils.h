@@ -31,6 +31,13 @@
 #include "ffrt_inner.h"
 
 namespace OHOS {
+namespace Accessibility {
+enum AccessibilityStateEventType : uint32_t;
+} // namespace Accessibility
+namespace AccessibilityConfig {
+enum CONFIG_ID : int32_t;
+} // namespace AccessibilityConfig
+
 namespace AccessibilityNapi {
 // key action
 enum KeyAction : int32_t {
@@ -147,6 +154,8 @@ bool ConvertGesturePathJSToNAPIPart2(napi_env env, napi_value object,
 AccessibilityEventType CovertStringToAccessibilityEventType(const std::string &eventType);
 AccessibilityEventType CovertStringToAccessibilityEventType(
     const OHOS::Accessibility::AccessibilityEventInfo &eventInfo, const std::string &eventTypeString);
+std::string ConvertStateEventTypeToString(OHOS::Accessibility::AccessibilityStateEventType type);
+std::string ConvertConfigIdToString(OHOS::AccessibilityConfig::CONFIG_ID configId);
 
 struct AccessibilityCallbackInfo {
     napi_env env_;
