@@ -323,14 +323,6 @@ void AccessibilityDisplayManager::DisplayListener::OnChangeForBigFold(
 {
     HILOG_DEBUG("currentOrientation = %{public}d, currentMode = %{public}d",
         currentOrientation, currentMode);
-    if (displayMode_ != currentMode) {
-        HILOG_INFO("need refresh");
-        if (manager_ != nullptr) {
-            manager_->RefreshWindowParam(RotationType::NO_CHANGE);
-        }
-        displayMode_ = currentMode;
-    }
-
     if (orientation_ != currentOrientation) {
         HILOG_INFO("need refresh orientation.");
         RotationType type = Singleton<AccessibilityDisplayManager>::GetInstance().GetRotationType(
@@ -338,7 +330,17 @@ void AccessibilityDisplayManager::DisplayListener::OnChangeForBigFold(
         if (manager_ != nullptr) {
             manager_->RefreshWindowParam(type);
         }
+        displayMode_ = currentMode;
         orientation_ = currentOrientation;
+        return;
+    }
+
+    if (displayMode_ != currentMode) {
+        HILOG_INFO("need refresh");
+        if (manager_ != nullptr) {
+            manager_->RefreshWindowParam(RotationType::NO_CHANGE);
+        }
+        displayMode_ = currentMode;
     }
 }
 

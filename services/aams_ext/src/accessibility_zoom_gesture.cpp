@@ -1050,7 +1050,7 @@ void AccessibilityZoomGesture::HandleSTZoomOneFingerDownStateDown(MMI::PointerEv
 
     MMI::PointerEvent::PointerItem pointerItem;
     event.GetPointerItem(event.GetPointerId(), pointerItem);
-    isTapOnWindow_ = windowMagnificationManager_->IsTapOnMagnificationWindow(pointerItem.GetDisplayX(),
+    isTapOnWindow_ |= windowMagnificationManager_->IsTapOnMagnificationWindow(pointerItem.GetDisplayX(),
         pointerItem.GetDisplayY());
     if (magnificationMode_ != FULL_SCREEN_MAGNIFICATION && !isTapOnWindow_) {
         SendCacheEventsToNext();
@@ -1497,12 +1497,12 @@ void AccessibilityZoomGesture::HandleTDZoomInitStateDown(MMI::PointerEvent &even
     event.GetPointerItem(event.GetPointerId(), pointerItem);
     if (magnificationMode_ == FULL_SCREEN_MAGNIFICATION) {
         gestureType_ = fullScreenManager_->CheckTapOnHotArea(pointerItem.GetDisplayX(), pointerItem.GetDisplayY());
-            } else {
+    } else {
         isTapOnWindowHotArea_ = windowMagnificationManager_->IsTapOnHotArea(pointerItem.GetDisplayX(),
             pointerItem.GetDisplayY());
         isTapOnWindow_ = windowMagnificationManager_->IsTapOnMagnificationWindow(pointerItem.GetDisplayX(),
             pointerItem.GetDisplayY());
-            }
+    }
     isTapOnMenu_ = menuManager_->IsTapOnMenu(pointerItem.GetDisplayX(), pointerItem.GetDisplayY());
 
     lastDownEvent_ = std::make_shared<MMI::PointerEvent>(event);
@@ -1540,7 +1540,7 @@ void AccessibilityZoomGesture::HandleTDZoomOneFingerDownStateDown(MMI::PointerEv
         }
     MMI::PointerEvent::PointerItem pointerItem;
     event.GetPointerItem(event.GetPointerId(), pointerItem);
-    isTapOnWindow_ = windowMagnificationManager_->IsTapOnMagnificationWindow(pointerItem.GetDisplayX(),
+    isTapOnWindow_ |= windowMagnificationManager_->IsTapOnMagnificationWindow(pointerItem.GetDisplayX(),
         pointerItem.GetDisplayY());
     lastTripleTapEvents_[1] = std::make_shared<MMI::PointerEvent>(event);
     TransferState(TWO_FINGER_DOWN);
