@@ -207,6 +207,7 @@ ohos_unittest("accessible_ability_test") {
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "i18n:intl_util",
+    "icu:shared_icuuc",
     "init:libbeget_proxy",
     "init:libbegetutil",
     "input:libmmi-client",

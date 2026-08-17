@@ -78,6 +78,7 @@ test_external_deps = [
   "hisysevent:libhisysevent",
   "hitrace:hitrace_meter",
   "i18n:intl_util",
+  "icu:shared_icuuc",
   "init:libbeget_proxy",
   "init:libbegetutil",
   "input:libmmi-client",
