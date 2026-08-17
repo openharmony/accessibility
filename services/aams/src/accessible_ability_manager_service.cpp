@@ -1513,7 +1513,7 @@ ErrCode AccessibleAbilityManagerService::SetMagnificationState(const bool state)
 ErrCode AccessibleAbilityManagerService::EnableUITestAbility(
     const sptr<IRemoteObject> &obj, int32_t userId, int32_t &actualUserId)
 {
-    HILOG_DEBUG();
+    HILOG_INFO();
     if (!IsSystemApp()) {
         HILOG_WARN("Not system app");
         return RET_ERR_NOT_SYSTEM_APP;
@@ -1540,7 +1540,6 @@ ErrCode AccessibleAbilityManagerService::EnableUITestAbility(
     ffrt::promise<RetError> syncPromise;
     ffrt::future syncFuture = syncPromise.get_future();
     handler_->PostTask([this, &syncPromise, obj, processName, userId]() {
-        HILOG_DEBUG();
         sptr<AccessibilityAccountData> accountData = GetAccountData(userId);
         if (!accountData) {
             HILOG_ERROR("accountData is nullptr %{public}d", userId);
@@ -1566,7 +1565,7 @@ ErrCode AccessibleAbilityManagerService::EnableUITestAbility(
 
 ErrCode AccessibleAbilityManagerService::DisableUITestAbility(int32_t userId)
 {
-    HILOG_DEBUG();
+    HILOG_INFO();
     if (!IsSystemApp()) {
         HILOG_WARN("Not system app");
         return RET_ERR_NOT_SYSTEM_APP;
@@ -1587,7 +1586,6 @@ ErrCode AccessibleAbilityManagerService::DisableUITestAbility(int32_t userId)
     std::shared_ptr<ffrt::promise<RetError>> syncPromise = std::make_shared<ffrt::promise<RetError>>();
     ffrt::future syncFuture = syncPromise->get_future();
     handler_->PostTask([this, syncPromise, processName, userId]() {
-        HILOG_DEBUG();
         sptr<AccessibilityAccountData> accountData = GetAccountData(userId);
         if (!accountData) {
             HILOG_ERROR("accountData is nullptr");

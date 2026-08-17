@@ -1095,6 +1095,7 @@ void AccessibilityWindowManager::WindowUpdateAll(const std::vector<sptr<Rosen::A
             SetActiveWindow(realWid);
         } else {
             activeWindowId_ = previousActiveWindowId_;
+            a11yWindows_[activeWindowId_].SetActive(true);
         }
 
         WindowUpdateAllExec(oldA11yWindows_, realWid, window);
