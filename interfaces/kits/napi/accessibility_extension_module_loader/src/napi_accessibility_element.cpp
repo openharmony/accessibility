@@ -3171,7 +3171,7 @@ void NAccessibilityElement::FindElementExecute(napi_env env, void* data)
             {
                 FocusMoveDirection direction = ConvertStringToDirection(callbackInfo->condition_);
                 HILOG_DEBUG("direction is %{public}d", direction);
-                if (systemApi) {
+                if (systemApi && callbackInfo->focusRuleType_ != FocusRuleType::DEFAULT) {
                     AccessibilityFocusMoveParam param;
                     param.direction = direction;
                     param.type = callbackInfo->focusRuleType_;
