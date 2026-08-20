@@ -28,7 +28,6 @@
 struct EnableAbilityListsObserver {
     EnableAbilityListsObserver(napi_env env, napi_ref callback) : env_(env), callback_(callback) {};
     void OnEnableAbilityListsStateChanged();
-    int OnEnableAbilityListsStateChangedWork(uv_work_t *work);
     napi_env env_ = nullptr;
     napi_ref callback_ = nullptr;
 };
@@ -46,7 +45,6 @@ struct EnableAbilityCallbackObserver {
 struct SeniorModeStateObserver {
     SeniorModeStateObserver(napi_env env, napi_ref callback) : env_(env), callback_(callback) {};
     void OnSeniorModeStateChanged(const std::string& bundleName, int32_t appIndex, bool state);
-    int OnSeniorModeStateChangedWork(uv_work_t *work);
     napi_env env_ = nullptr;
     napi_ref callback_ = nullptr;
 };
@@ -65,6 +63,7 @@ public:
     void UnsubscribeObservers();
     void UnsubscribeInstallObserver(napi_env env, napi_value observer);
     void UnsubscribeInstallObservers();
+    void DeleteObserverReference(napi_env env, std::shared_ptr<EnableAbilityListsObserver> observer);
 
 private:
     ffrt::mutex mutex_;
@@ -82,6 +81,7 @@ public:
     void UnsubscribeFromFramework();
     void SubscribeObserver(napi_env env, const std::string& name, napi_value observer);
     void UnsubscribeObserver(napi_env env, const std::string& name);
+    void DeleteObserverReference(napi_env env, std::shared_ptr<EnableAbilityCallbackObserver> observer);
 
 private:
     ffrt::mutex mutex_;
@@ -98,6 +98,7 @@ public:
     void SubscribeObserver(napi_env env, napi_value observer);
     void UnsubscribeObserver(napi_env env, napi_value observer);
     void UnsubscribeObservers();
+    void DeleteObserverReference(napi_env env, std::shared_ptr<SeniorModeStateObserver> observer);
 
 private:
     ffrt::mutex mutex_;
