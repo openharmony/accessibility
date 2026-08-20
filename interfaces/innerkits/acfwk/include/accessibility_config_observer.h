@@ -58,6 +58,7 @@ public:
     void SubscribeObserver(napi_env env, OHOS::AccessibilityConfig::CONFIG_ID id, napi_value observer);
     void UnsubscribeObserver(napi_env env, OHOS::AccessibilityConfig::CONFIG_ID id, napi_value observer);
     void UnsubscribeObservers(OHOS::AccessibilityConfig::CONFIG_ID id);
+    void DeleteObserverReference(napi_env env, std::shared_ptr<NAccessibilityConfigObserver> observer);
 
 private:
     ffrt::mutex mutex_;

@@ -473,6 +473,7 @@ void NAccessibilityConfigObserverImpl::UnsubscribeObserver(napi_env env,
     for (auto iter = observers_.begin(); iter != observers_.end();) {
         if ((*iter)->configId_ == id) {
             if (CheckObserverEqual(env, observer, (*iter)->env_, (*iter)->handlerRef_)) {
+                DeleteObserverReference(env, *iter);
                 observers_.erase(iter);
                 return;
             } else {
@@ -491,9 +492,40 @@ void NAccessibilityConfigObserverImpl::UnsubscribeObservers(OHOS::AccessibilityC
     std::lock_guard<ffrt::mutex> lock(mutex_);
     for (auto iter = observers_.begin(); iter != observers_.end();) {
         if ((*iter)->configId_ == id) {
+            DeleteObserverReference((*iter)->env_, *iter);
             iter = observers_.erase(iter);
         } else {
             iter++;
         }
+    }
+}
+
+void NAccessibilityConfigObserverImpl::DeleteObserverReference(
+    napi_env env, std::shared_ptr<NAccessibilityConfigObserver> observer)
+{
+    if (observer == nullptr) {
+        return;
+    }
+    std::shared_ptr<AccessibilityCallbackInfo> callbackInfo = std::make_shared<AccessibilityCallbackInfo>();
+    if (callbackInfo == nullptr) {
+        HILOG_ERROR("failed to create callbackInfo");
+        return;
+    }
+    callbackInfo->env_ = observer->env_;
+    callbackInfo->ref_ = observer->handlerRef_;
+    auto task = [callbackInfo]() {
+        if (callbackInfo == nullptr) {
+            return;
+        }
+        napi_env tmpEnv = callbackInfo->env_;
+        auto closeScope = [tmpEnv](napi_handle_scope scope) {
+            napi_close_handle_scope(tmpEnv, scope);
+        };
+        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(
+            OHOS::Accessibility::TmpOpenScope(callbackInfo->env_), closeScope);
+        napi_delete_reference(tmpEnv, callbackInfo->ref_);
+    };
+    if (napi_send_event(env, task, napi_eprio_high, "DeleteObserverReference") != napi_status::napi_ok) {
+        HILOG_ERROR("failed to send event");
     }
 }

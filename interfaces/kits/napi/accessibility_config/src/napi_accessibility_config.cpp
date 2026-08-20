@@ -1228,70 +1228,34 @@ napi_value NAccessibilityConfig::UnSubscribeConfigObserver(napi_env env, napi_ca
 void EnableAbilityListsObserver::OnEnableAbilityListsStateChanged()
 {
     HILOG_DEBUG();
-
-    AccessibilityCallbackInfo *callbackInfo = new(std::nothrow) AccessibilityCallbackInfo();
+    std::shared_ptr<AccessibilityCallbackInfo> callbackInfo = std::make_shared<AccessibilityCallbackInfo>();
     if (callbackInfo == nullptr) {
-        HILOG_ERROR("callbackInfo is nullptr");
+        HILOG_ERROR("Failed to create callbackInfo.");
         return;
     }
-
-    uv_work_t *work = new(std::nothrow) uv_work_t;
-    if (!work) {
-        HILOG_ERROR("Failed to create work.");
-        delete callbackInfo;
-        callbackInfo = nullptr;
-        return;
-    }
-
     callbackInfo->env_ = env_;
     callbackInfo->ref_ = callback_;
-    work->data = static_cast<void*>(callbackInfo);
-
-    int ret = OnEnableAbilityListsStateChangedWork(work);
-    if (ret != 0) {
-        HILOG_ERROR("Failed to execute OnEnableAbilityListsStateChanged work queue");
-        delete callbackInfo;
-        callbackInfo = nullptr;
-        delete work;
-        work = nullptr;
+    auto task = [callbackInfo]() {
+        if (callbackInfo == nullptr) {
+            return;
+        }
+        napi_env env = callbackInfo->env_;
+        auto closeScope = [env](napi_handle_scope scope) {
+            napi_close_handle_scope(env, scope);
+        };
+        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(
+            OHOS::Accessibility::TmpOpenScope(callbackInfo->env_), closeScope);
+        napi_value handler = nullptr;
+        napi_value callResult = nullptr;
+        napi_value jsEvent = nullptr;
+        napi_value undefined = nullptr;
+        napi_get_reference_value(callbackInfo->env_, callbackInfo->ref_, &handler);
+        napi_get_undefined(callbackInfo->env_, &undefined);
+        napi_call_function(callbackInfo->env_, undefined, handler, 1, &jsEvent, &callResult);
+    };
+    if (napi_send_event(env_, task, napi_eprio_high, "OnEnableAbilityListsStateChanged") != napi_status::napi_ok) {
+        HILOG_ERROR("failed to send event");
     }
-}
-
-int EnableAbilityListsObserver::OnEnableAbilityListsStateChangedWork(uv_work_t *work)
-{
-    uv_loop_s *loop = nullptr;
-    napi_get_uv_event_loop(env_, &loop);
-    if (loop == nullptr || work == nullptr) {
-        HILOG_ERROR("loop or work is nullptr.");
-        return RET_ERR_FAILED;
-    }
-    int ret = uv_queue_work_with_qos_internal(
-        loop,
-        work,
-        [](uv_work_t *work) {},
-        [](uv_work_t *work, int status) {
-            AccessibilityCallbackInfo *callbackInfo = static_cast<AccessibilityCallbackInfo*>(work->data);
-            napi_env env = callbackInfo->env_;
-            auto closeScope = [env](napi_handle_scope scope) {
-                napi_close_handle_scope(env, scope);
-            };
-            std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scopes(
-                OHOS::Accessibility::TmpOpenScope(callbackInfo->env_), closeScope);
-            napi_value handler = nullptr;
-            napi_value callResult = nullptr;
-            napi_value jsEvent = nullptr;
-            napi_value undefined = nullptr;
-            napi_get_reference_value(callbackInfo->env_, callbackInfo->ref_, &handler);
-            napi_get_undefined(callbackInfo->env_, &undefined);
-            napi_call_function(callbackInfo->env_, undefined, handler, 1, &jsEvent, &callResult);
-            delete callbackInfo;
-            callbackInfo = nullptr;
-            delete work;
-            work = nullptr;
-        },
-        uv_qos_default,
-        "OnEnableAbilityListsStateChangedWork");
-    return ret;
 }
 
 void EnableAbilityCallbackObserver::OnEnableAbilityRemoteDied(const std::string& name)
@@ -1435,6 +1399,7 @@ void EnableAbilityCallbackObserverImpl::OnEnableAbilityRemoteDied(const std::str
             return;
         }
         observerPtr->OnEnableAbilityRemoteDied(name);
+        DeleteObserverReference(observerPtr->env_, observerPtr);
         enableAbilityCallbackObservers_.erase(iter);
         return;
     }
@@ -1466,6 +1431,7 @@ void EnableAbilityCallbackObserverImpl::UnsubscribeObserver(napi_env env, const 
     std::lock_guard<ffrt::mutex> lock(mutex_);
     auto iter = enableAbilityCallbackObservers_.find(name);
     if (iter != enableAbilityCallbackObservers_.end()) {
+        DeleteObserverReference(iter->second->env_, iter->second);
         enableAbilityCallbackObservers_.erase(iter);
         return;
     }
@@ -1482,6 +1448,36 @@ void EnableAbilityCallbackObserverImpl::UnsubscribeFromFramework()
     HILOG_INFO("UnsubscribeFromFramework");
     auto &instance = OHOS::AccessibilityConfig::AccessibilityConfig::GetInstance();
     instance.UnsubscribeEnableAbilityCallbackObserver(shared_from_this());
+}
+
+void EnableAbilityCallbackObserverImpl::DeleteObserverReference(
+    napi_env env, std::shared_ptr<EnableAbilityCallbackObserver> observer)
+{
+    if (observer == nullptr) {
+        return;
+    }
+    std::shared_ptr<AccessibilityCallbackInfo> callbackInfo = std::make_shared<AccessibilityCallbackInfo>();
+    if (callbackInfo == nullptr) {
+        HILOG_ERROR("failed to create callbackInfo");
+        return;
+    }
+    callbackInfo->env_ = observer->env_;
+    callbackInfo->ref_ = observer->notifyCallback_;
+    auto task = [callbackInfo]() {
+        if (callbackInfo == nullptr) {
+            return;
+        }
+        napi_env tmpEnv = callbackInfo->env_;
+        auto closeScope = [tmpEnv](napi_handle_scope scope) {
+            napi_close_handle_scope(tmpEnv, scope);
+        };
+        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(
+            OHOS::Accessibility::TmpOpenScope(callbackInfo->env_), closeScope);
+        napi_delete_reference(tmpEnv, callbackInfo->ref_);
+    };
+    if (napi_send_event(env, task, napi_eprio_high, "DeleteObserverReference") != napi_status::napi_ok) {
+        HILOG_ERROR("failed to send event");
+    }
 }
 
 void EnableAbilityListsObserverImpl::SubscribeInstallObserver(napi_env env, napi_value observer)
@@ -1514,6 +1510,7 @@ void EnableAbilityListsObserverImpl::UnsubscribeObserver(napi_env env, napi_valu
     std::lock_guard<ffrt::mutex> lock(mutex_);
     for (auto iter = enableAbilityListsObservers_.begin(); iter != enableAbilityListsObservers_.end();) {
         if (CheckObserverEqual(env, observer, (*iter)->env_, (*iter)->callback_)) {
+            DeleteObserverReference(env, *iter);
             enableAbilityListsObservers_.erase(iter);
             return;
         } else {
@@ -1526,7 +1523,10 @@ void EnableAbilityListsObserverImpl::UnsubscribeObservers()
 {
     HILOG_INFO("SubEvent op=off_all  kit=AccessibilityKit  event=enabledAccessibilityExtensionListChange");
     std::lock_guard<ffrt::mutex> lock(mutex_);
-    enableAbilityListsObservers_.clear();
+    for (auto iter = enableAbilityListsObservers_.begin(); iter != enableAbilityListsObservers_.end();) {
+        DeleteObserverReference((*iter)->env_, *iter);
+        iter = enableAbilityListsObservers_.erase(iter);
+    }
 }
 
 void EnableAbilityListsObserverImpl::UnsubscribeInstallObserver(napi_env env, napi_value observer)
@@ -1535,6 +1535,7 @@ void EnableAbilityListsObserverImpl::UnsubscribeInstallObserver(napi_env env, na
     std::lock_guard<ffrt::mutex> lock(mutex_);
     for (auto iter = installAbilityListsObservers_.begin(); iter != installAbilityListsObservers_.end(); iter++) {
         if (CheckObserverEqual(env, observer, (*iter)->env_, (*iter)->callback_)) {
+            DeleteObserverReference(env, *iter);
             installAbilityListsObservers_.erase(iter);
             return;
         }
@@ -1545,7 +1546,40 @@ void EnableAbilityListsObserverImpl::UnsubscribeInstallObservers()
 {
     HILOG_INFO("SubEvent op=off_all  kit=AccessibilityKit  event=installedAccessibilityListChange");
     std::lock_guard<ffrt::mutex> lock(mutex_);
-    installAbilityListsObservers_.clear();
+    for (auto iter = installAbilityListsObservers_.begin(); iter != installAbilityListsObservers_.end();) {
+        DeleteObserverReference((*iter)->env_, *iter);
+        iter = installAbilityListsObservers_.erase(iter);
+    }
+}
+
+void EnableAbilityListsObserverImpl::DeleteObserverReference(
+    napi_env env, std::shared_ptr<EnableAbilityListsObserver> observer)
+{
+    if (observer == nullptr) {
+        return;
+    }
+    std::shared_ptr<AccessibilityCallbackInfo> callbackInfo = std::make_shared<AccessibilityCallbackInfo>();
+    if (callbackInfo == nullptr) {
+        HILOG_ERROR("failed to create callbackInfo");
+        return;
+    }
+    callbackInfo->env_ = observer->env_;
+    callbackInfo->ref_ = observer->callback_;
+    auto task = [callbackInfo]() {
+        if (callbackInfo == nullptr) {
+            return;
+        }
+        napi_env tmpEnv = callbackInfo->env_;
+        auto closeScope = [tmpEnv](napi_handle_scope scope) {
+            napi_close_handle_scope(tmpEnv, scope);
+        };
+        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(
+            OHOS::Accessibility::TmpOpenScope(callbackInfo->env_), closeScope);
+        napi_delete_reference(tmpEnv, callbackInfo->ref_);
+    };
+    if (napi_send_event(env, task, napi_eprio_high, "DeleteObserverReference") != napi_status::napi_ok) {
+        HILOG_ERROR("failed to send event");
+    }
 }
 
 napi_value NAccessibilityConfig::SubscribeSelfSeniorMode(napi_env env, napi_callback_info info)
@@ -1831,93 +1865,50 @@ void SeniorModeStateObserver::OnSeniorModeStateChanged(const std::string& bundle
 {
     HILOG_INFO("bundleName: %{public}s, appIndex: %{public}d, state: %{public}d",
         bundleName.c_str(), appIndex, state);
-
-    StateCallbackInfo *callbackInfo = new(std::nothrow) StateCallbackInfo();
+    std::shared_ptr<StateCallbackInfo> callbackInfo = std::make_shared<StateCallbackInfo>();
     if (callbackInfo == nullptr) {
-        HILOG_ERROR("callbackInfo is nullptr");
+        HILOG_ERROR("Failed to create callbackInfo.");
         return;
     }
-
-    uv_work_t *work = new(std::nothrow) uv_work_t;
-    if (!work) {
-        HILOG_ERROR("Failed to create work.");
-        delete callbackInfo;
-        callbackInfo = nullptr;
-        return;
-    }
-
     callbackInfo->env_ = env_;
     callbackInfo->ref_ = callback_;
     callbackInfo->stringValue_ = bundleName;
     callbackInfo->int32Value_ = appIndex;
     callbackInfo->state_ = state;
-    work->data = static_cast<void*>(callbackInfo);
-
-    int ret = OnSeniorModeStateChangedWork(work);
-    if (ret != 0) {
-        HILOG_ERROR("Failed to execute OnSeniorModeStateChanged work queue");
-        delete callbackInfo;
-        callbackInfo = nullptr;
-        delete work;
-        work = nullptr;
+    auto task = [callbackInfo]() {
+        if (callbackInfo == nullptr) {
+            return;
+        }
+        napi_env env = callbackInfo->env_;
+        auto closeScope = [env](napi_handle_scope scope) {
+            napi_close_handle_scope(env, scope);
+        };
+        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(
+            OHOS::Accessibility::TmpOpenScope(callbackInfo->env_), closeScope);
+        napi_value handler = nullptr;
+        napi_value callResult = nullptr;
+        napi_value jsEvent = nullptr;
+        napi_value undefined = nullptr;
+        napi_create_object(callbackInfo->env_, &jsEvent);
+        napi_value jsBundleName = nullptr;
+        napi_create_string_utf8(callbackInfo->env_, callbackInfo->stringValue_.c_str(),
+            NAPI_AUTO_LENGTH, &jsBundleName);
+        napi_set_named_property(callbackInfo->env_, jsEvent, "bundleName", jsBundleName);
+        if (callbackInfo->int32Value_ >= 0) {
+            napi_value jsAppIndex = nullptr;
+            napi_create_int32(callbackInfo->env_, callbackInfo->int32Value_, &jsAppIndex);
+            napi_set_named_property(callbackInfo->env_, jsEvent, "appIndex", jsAppIndex);
+        }
+        napi_value jsState = nullptr;
+        napi_get_boolean(callbackInfo->env_, callbackInfo->state_, &jsState);
+        napi_set_named_property(callbackInfo->env_, jsEvent, "seniorModeState", jsState);
+        napi_get_reference_value(callbackInfo->env_, callbackInfo->ref_, &handler);
+        napi_get_undefined(callbackInfo->env_, &undefined);
+        napi_call_function(callbackInfo->env_, undefined, handler, 1, &jsEvent, &callResult);
+    };
+    if (napi_send_event(env_, task, napi_eprio_high, "OnSeniorModeStateChanged") != napi_status::napi_ok) {
+        HILOG_ERROR("failed to send event");
     }
-}
-
-int SeniorModeStateObserver::OnSeniorModeStateChangedWork(uv_work_t *work)
-{
-    uv_loop_s *loop = nullptr;
-    napi_get_uv_event_loop(env_, &loop);
-    if (loop == nullptr || work == nullptr) {
-        HILOG_ERROR("loop or work is nullptr.");
-        return RET_ERR_FAILED;
-    }
-
-    int ret = uv_queue_work_with_qos_internal(
-        loop,
-        work,
-        [](uv_work_t *work) {},
-        [](uv_work_t *work, int status) {
-            StateCallbackInfo *callbackInfo = static_cast<StateCallbackInfo*>(work->data);
-            napi_env env = callbackInfo->env_;
-            auto closeScope = [env](napi_handle_scope scope) {
-                napi_close_handle_scope(env, scope);
-            };
-            std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scopes(
-                OHOS::Accessibility::TmpOpenScope(callbackInfo->env_), closeScope);
-
-            napi_value handler = nullptr;
-            napi_value callResult = nullptr;
-            napi_value jsEvent = nullptr;
-            napi_value undefined = nullptr;
-
-            napi_create_object(env, &jsEvent);
-
-            napi_value jsBundleName = nullptr;
-            napi_create_string_utf8(env, callbackInfo->stringValue_.c_str(), NAPI_AUTO_LENGTH, &jsBundleName);
-            napi_set_named_property(env, jsEvent, "bundleName", jsBundleName);
-
-            if (callbackInfo->int32Value_ >= 0) {
-                napi_value jsAppIndex = nullptr;
-                napi_create_int32(env, callbackInfo->int32Value_, &jsAppIndex);
-                napi_set_named_property(env, jsEvent, "appIndex", jsAppIndex);
-            }
-
-            napi_value jsState = nullptr;
-            napi_get_boolean(env, callbackInfo->state_, &jsState);
-            napi_set_named_property(env, jsEvent, "seniorModeState", jsState);
-
-            napi_get_reference_value(callbackInfo->env_, callbackInfo->ref_, &handler);
-            napi_get_undefined(callbackInfo->env_, &undefined);
-            napi_call_function(callbackInfo->env_, undefined, handler, 1, &jsEvent, &callResult);
-
-            delete callbackInfo;
-            callbackInfo = nullptr;
-            delete work;
-            work = nullptr;
-        },
-        uv_qos_default,
-        "OnSeniorModeStateChangedWork");
-    return ret;
 }
 
 void SeniorModeStateObserverImpl::OnSeniorModeStateChanged(const std::string& bundleName, int32_t appIndex, bool state)
@@ -1978,6 +1969,7 @@ void SeniorModeStateObserverImpl::UnsubscribeObserver(napi_env env, napi_value o
     std::lock_guard<ffrt::mutex> lock(mutex_);
     for (auto iter = observers_.begin(); iter != observers_.end();) {
         if (CheckObserverEqual(env, observer, (*iter)->env_, (*iter)->callback_)) {
+            DeleteObserverReference(env, *iter);
             observers_.erase(iter);
             return;
         } else {
@@ -1990,7 +1982,40 @@ void SeniorModeStateObserverImpl::UnsubscribeObservers()
 {
     HILOG_INFO();
     std::lock_guard<ffrt::mutex> lock(mutex_);
-    observers_.clear();
+    for (auto iter = observers_.begin(); iter != observers_.end();) {
+        DeleteObserverReference((*iter)->env_, *iter);
+        iter = observers_.erase(iter);
+    }
+}
+
+void SeniorModeStateObserverImpl::DeleteObserverReference(
+    napi_env env, std::shared_ptr<SeniorModeStateObserver> observer)
+{
+    if (observer == nullptr) {
+        return;
+    }
+    std::shared_ptr<AccessibilityCallbackInfo> callbackInfo = std::make_shared<AccessibilityCallbackInfo>();
+    if (callbackInfo == nullptr) {
+        HILOG_ERROR("failed to create callbackInfo");
+        return;
+    }
+    callbackInfo->env_ = observer->env_;
+    callbackInfo->ref_ = observer->callback_;
+    auto task = [callbackInfo]() {
+        if (callbackInfo == nullptr) {
+            return;
+        }
+        napi_env tmpEnv = callbackInfo->env_;
+        auto closeScope = [tmpEnv](napi_handle_scope scope) {
+            napi_close_handle_scope(tmpEnv, scope);
+        };
+        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(
+            OHOS::Accessibility::TmpOpenScope(callbackInfo->env_), closeScope);
+        napi_delete_reference(tmpEnv, callbackInfo->ref_);
+    };
+    if (napi_send_event(env, task, napi_eprio_high, "DeleteObserverReference") != napi_status::napi_ok) {
+        HILOG_ERROR("failed to send event");
+    }
 }
 
 napi_value NAccessibilityConfig::StartBlinking(napi_env env, napi_callback_info info)
