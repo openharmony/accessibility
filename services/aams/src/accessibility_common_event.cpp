@@ -197,7 +197,6 @@ void AccessibilityCommonEvent::HandlePackageChanged(const EventFwk::CommonEventD
 }
 
 
-
 // LCOV_EXCL_START
 void AccessibilityCommonEvent::HandleDataShareReady(const EventFwk::CommonEventData &data) const
 {
