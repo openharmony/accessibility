@@ -184,6 +184,12 @@ void AccessibilityCommonEvent::HandlePackageAdd(const EventFwk::CommonEventData 
 
 void AccessibilityCommonEvent::HandlePackageChanged(const EventFwk::CommonEventData &data) const
 {
+    const int32_t UNINSTALL_STATE = 15;
+    int32_t type = data.GetWant().GetIntParam("type", -1);
+    if (type == UNINSTALL_STATE) {
+        HILOG_INFO("Ignore PACKAGE_CHANGED for uninstall state change");
+        return;
+    }
     std::string bundleName = data.GetWant().GetBundle();
     int userId = data.GetWant().GetIntParam(KEY_USER_ID, 0);
     HILOG_INFO("bundleName is %{public}s", bundleName.c_str());
