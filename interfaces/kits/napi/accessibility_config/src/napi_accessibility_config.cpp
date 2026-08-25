@@ -90,6 +90,32 @@ static napi_handle_scope TmpOpenScope(napi_env env)
     NAPI_CALL(env, napi_open_handle_scope(env, &scope));
     return scope;
 }
+
+static void SendDeleteReferenceEvent(napi_env env, napi_env refEnv, napi_ref ref, const char* eventName)
+{
+    std::shared_ptr<AccessibilityCallbackInfo> callbackInfo = std::make_shared<AccessibilityCallbackInfo>();
+    if (callbackInfo == nullptr) {
+        HILOG_ERROR("failed to create callbackInfo");
+        return;
+    }
+    callbackInfo->env_ = refEnv;
+    callbackInfo->ref_ = ref;
+    auto task = [callbackInfo]() {
+        if (callbackInfo == nullptr) {
+            return;
+        }
+        napi_env tmpEnv = callbackInfo->env_;
+        auto closeScope = [tmpEnv](napi_handle_scope scope) {
+            napi_close_handle_scope(tmpEnv, scope);
+        };
+        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(
+            OHOS::Accessibility::TmpOpenScope(callbackInfo->env_), closeScope);
+        napi_delete_reference(tmpEnv, callbackInfo->ref_);
+    };
+    if (napi_send_event(env, task, napi_eprio_high, eventName) != napi_status::napi_ok) {
+        HILOG_ERROR("failed to send event");
+    }
+}
 } // namespace Accessibility
 } // namespace OHOS
 
@@ -1456,28 +1482,8 @@ void EnableAbilityCallbackObserverImpl::DeleteObserverReference(
     if (observer == nullptr) {
         return;
     }
-    std::shared_ptr<AccessibilityCallbackInfo> callbackInfo = std::make_shared<AccessibilityCallbackInfo>();
-    if (callbackInfo == nullptr) {
-        HILOG_ERROR("failed to create callbackInfo");
-        return;
-    }
-    callbackInfo->env_ = observer->env_;
-    callbackInfo->ref_ = observer->notifyCallback_;
-    auto task = [callbackInfo]() {
-        if (callbackInfo == nullptr) {
-            return;
-        }
-        napi_env tmpEnv = callbackInfo->env_;
-        auto closeScope = [tmpEnv](napi_handle_scope scope) {
-            napi_close_handle_scope(tmpEnv, scope);
-        };
-        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(
-            OHOS::Accessibility::TmpOpenScope(callbackInfo->env_), closeScope);
-        napi_delete_reference(tmpEnv, callbackInfo->ref_);
-    };
-    if (napi_send_event(env, task, napi_eprio_high, "DeleteObserverReference") != napi_status::napi_ok) {
-        HILOG_ERROR("failed to send event");
-    }
+    SendDeleteReferenceEvent(env, observer->env_, observer->notifyCallback_,
+        "EnableAbilityCallback_DeleteObserverReference");
 }
 
 void EnableAbilityListsObserverImpl::SubscribeInstallObserver(napi_env env, napi_value observer)
@@ -1558,28 +1564,8 @@ void EnableAbilityListsObserverImpl::DeleteObserverReference(
     if (observer == nullptr) {
         return;
     }
-    std::shared_ptr<AccessibilityCallbackInfo> callbackInfo = std::make_shared<AccessibilityCallbackInfo>();
-    if (callbackInfo == nullptr) {
-        HILOG_ERROR("failed to create callbackInfo");
-        return;
-    }
-    callbackInfo->env_ = observer->env_;
-    callbackInfo->ref_ = observer->callback_;
-    auto task = [callbackInfo]() {
-        if (callbackInfo == nullptr) {
-            return;
-        }
-        napi_env tmpEnv = callbackInfo->env_;
-        auto closeScope = [tmpEnv](napi_handle_scope scope) {
-            napi_close_handle_scope(tmpEnv, scope);
-        };
-        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(
-            OHOS::Accessibility::TmpOpenScope(callbackInfo->env_), closeScope);
-        napi_delete_reference(tmpEnv, callbackInfo->ref_);
-    };
-    if (napi_send_event(env, task, napi_eprio_high, "DeleteObserverReference") != napi_status::napi_ok) {
-        HILOG_ERROR("failed to send event");
-    }
+    SendDeleteReferenceEvent(env, observer->env_, observer->callback_,
+        "EnableAbilityLists_DeleteObserverReference");
 }
 
 napi_value NAccessibilityConfig::SubscribeSelfSeniorMode(napi_env env, napi_callback_info info)
@@ -1994,28 +1980,8 @@ void SeniorModeStateObserverImpl::DeleteObserverReference(
     if (observer == nullptr) {
         return;
     }
-    std::shared_ptr<AccessibilityCallbackInfo> callbackInfo = std::make_shared<AccessibilityCallbackInfo>();
-    if (callbackInfo == nullptr) {
-        HILOG_ERROR("failed to create callbackInfo");
-        return;
-    }
-    callbackInfo->env_ = observer->env_;
-    callbackInfo->ref_ = observer->callback_;
-    auto task = [callbackInfo]() {
-        if (callbackInfo == nullptr) {
-            return;
-        }
-        napi_env tmpEnv = callbackInfo->env_;
-        auto closeScope = [tmpEnv](napi_handle_scope scope) {
-            napi_close_handle_scope(tmpEnv, scope);
-        };
-        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(
-            OHOS::Accessibility::TmpOpenScope(callbackInfo->env_), closeScope);
-        napi_delete_reference(tmpEnv, callbackInfo->ref_);
-    };
-    if (napi_send_event(env, task, napi_eprio_high, "DeleteObserverReference") != napi_status::napi_ok) {
-        HILOG_ERROR("failed to send event");
-    }
+    SendDeleteReferenceEvent(env, observer->env_, observer->callback_,
+        "SeniorModeState_DeleteObserverReference");
 }
 
 napi_value NAccessibilityConfig::StartBlinking(napi_env env, napi_callback_info info)
