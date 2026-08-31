@@ -14,6 +14,7 @@
  */
 
 #include "utils.h"
+#include "parse_app_index.h"
 
 #ifdef OHOS_BUILD_ENABLE_HISYSEVENT
 #include <hisysevent.h>
@@ -71,7 +72,6 @@ namespace {
     constexpr int32_t BASE_USER_RANGE = 200000;
     constexpr int32_t INVALID_ID = -1;
     constexpr int32_t INVALID_USER_ID = -1;
-    constexpr int32_t DECIMAL_BASE = 10;
     constexpr uint64_t ELEMENT_MOVE_BIT = 40;
 } // namespace
 
@@ -756,15 +756,10 @@ bool Utils::ParseSeniorModeStateKey(const std::string& key, std::string& bundleN
 
     bundleName = key.substr(0, pos);
     std::string appIndexStr = key.substr(pos + 1);
-
-    for (char c : appIndexStr) {
-        if (!std::isdigit(c)) {
-            HILOG_ERROR("Invalid appIndex: %{public}s", appIndexStr.c_str());
-            return false;
-        }
+    if (!ParseAppIndexInt32(appIndexStr, appIndex)) {
+        HILOG_ERROR("Invalid appIndex: %{public}s", appIndexStr.c_str());
+        return false;
     }
-
-    appIndex = static_cast<int32_t>(std::strtol(appIndexStr.c_str(), nullptr, DECIMAL_BASE));
     return true;
 }
 // LCOV_EXCL_STOP
