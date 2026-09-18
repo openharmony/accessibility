@@ -111,6 +111,11 @@ public:
         return RET_OK;
     }
 
+    ErrCode GetSelectReaderState(bool &state) override
+    {
+        return RET_OK;
+    }
+
     ErrCode SetCaptionProperty(const CaptionPropertyParcel &caption, bool isPermissionRequired) override
     {
         return RET_OK;

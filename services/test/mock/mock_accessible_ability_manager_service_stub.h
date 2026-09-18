@@ -75,6 +75,7 @@ public:
 
     ErrCode GetCaptionState(bool& state, bool isPermissionRequired) override;
     ErrCode GetScreenReaderState(bool& state) override;
+    ErrCode GetSelectReaderState(bool& state) override;
 
     ErrCode EnableAbility(const std::string& name, uint32_t capabilities,
         const bool connectCallBackFlag) override;
@@ -167,6 +168,7 @@ private:
     bool invertColor_ = false;
     bool captionState_ = false;
     bool screenReaderState_ = false;
+    bool selectReaderState_ = false;
     bool animationOff_ = false;
     bool audioMono_ = false;
     bool mouseKey_ = false;
