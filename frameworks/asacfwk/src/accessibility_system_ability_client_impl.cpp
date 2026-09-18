@@ -542,6 +542,25 @@ RetError AccessibilitySystemAbilityClientImpl::IsScreenReaderEnabled(bool &isEna
     return RET_OK;
 }
 
+RetError AccessibilitySystemAbilityClientImpl::IsSelectReaderEnabled(bool &isEnabled)
+{
+    HILOG_DEBUG();
+#ifdef ACCESSIBILITY_EMULATOR_DEFINED
+    ApiReportHelper reporter("AccessibilitySystemAbilityClientImpl.IsSelectReaderEnabled");
+#endif // ACCESSIBILITY_EMULATOR_DEFINED
+    sptr<IAccessibleAbilityManagerService> serviceProxy;
+    {
+        std::lock_guard<ffrt::mutex> lock(mutex_);
+        if (serviceProxy_ == nullptr) {
+            HILOG_ERROR("Failed to get aams service");
+            return RET_ERR_SAMGR;
+        }
+        serviceProxy = serviceProxy_;
+    }
+    serviceProxy->GetSelectReaderState(isEnabled);
+    return RET_OK;
+}
+
 RetError AccessibilitySystemAbilityClientImpl::IsEnabled(bool &isEnabled)
 {
     HILOG_DEBUG();

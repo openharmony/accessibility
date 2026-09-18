@@ -53,6 +53,7 @@ namespace {
     const std::string ACCESSIBILITY_DISPLAY_DALTONIZER_ENABLED = "accessibility_display_daltonizer_enabled";
     const std::string MASTER_MONO = "master_mono";
     const std::string ACCESSIBILITY_SCREENREADER_ENABLED = "accessibility_screenreader_enabled";
+    const std::string ACCESSIBILITY_SELECTREADER_ENABLED = "accessibility_selectreader_enabled";
     const std::string MASTER_BALENCE = "master_balance";
     const std::string CLICK_RESPONSE_TIME = "click_response_time";
     const std::string IGNORE_REPEAT_CLICK_SWITCH = "ignore_repeat_click_switch";
@@ -526,6 +527,9 @@ void AccessibilityAccountData::SetAbilityAutoStartState(const std::string &name,
         SetScreenReaderExtInAllAccounts(state);
         return;
     }
+    if (name == selectReaderAbilityName_) {
+        SetSelectReaderState(selectReaderKey_, state ? "1" : "0");
+    }
     if (!config_) {
         HILOG_WARN("conig_ is nullptr.");
         return;
@@ -599,6 +603,29 @@ bool AccessibilityAccountData::GetDefaultUserScreenReaderState()
     std::vector<std::string> services = config_->GetEnabledAccessibilityServices();
     auto iter = std::find(services.begin(), services.end(), SCREEN_READER_BUNDLE_ABILITY_NAME);
     return iter != services.end();
+}
+
+void AccessibilityAccountData::SetSelectReaderState(const std::string &name, const std::string &state)
+{
+    HILOG_DEBUG("set select reader key [%{public}s], state = [%{public}s].", name.c_str(), state.c_str());
+    std::shared_ptr<AccessibilitySettingProvider> service =
+        AccessibilitySettingProvider::GetInstance(POWER_MANAGER_SERVICE_ID);
+    if (service == nullptr) {
+        HILOG_ERROR("service is nullptr");
+        return;
+    }
+    ErrCode ret = service->PutStringValue(name, state, true);
+    if (ret != ERR_OK) {
+        HILOG_ERROR("set failed, ret=%{public}d", ret);
+    } else {
+        selectReaderState_ = (state == "1");
+    }
+}
+
+bool AccessibilityAccountData::GetSelectReaderState()
+{
+    HILOG_DEBUG("select reader state is %{public}d", selectReaderState_);
+    return selectReaderState_;
 }
 
 void AccessibilityAccountData::DelAutoStartPrefKeyInRemovePkg(const std::string &bundleName)
@@ -728,6 +755,9 @@ RetError AccessibilityAccountData::EnableAbility(const std::string &name, const 
     if (name == screenReaderAbilityName_) {
         SetScreenReaderState(screenReaderKey_, "1");
     }
+    if (name == selectReaderAbilityName_) {
+        SetSelectReaderState(selectReaderKey_, "1");
+    }
     UpdateAbilities(callerBundleName);
     Utils::RecordStartingA11yEvent(name);
     return RET_OK;
@@ -829,6 +859,7 @@ void AccessibilityAccountData::Init()
         HILOG_ERROR("service is nullptr");
         return;
     }
+    service->GetBoolValue(ACCESSIBILITY_SELECTREADER_ENABLED, selectReaderState_);
     bool cloneState = false;
     service->GetBoolValue(ACCESSIBILITY_CLONE_FLAG, cloneState);
     if (cloneState == true) {

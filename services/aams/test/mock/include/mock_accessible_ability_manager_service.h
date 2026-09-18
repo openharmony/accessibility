@@ -96,6 +96,7 @@ public:
     MOCK_METHOD0(UpdateAccessibilityManagerService, void());
     MOCK_METHOD2(GetCaptionState, ErrCode(bool &state, bool isPermissionRequired));
     MOCK_METHOD1(GetScreenReaderState, ErrCode(bool &state));
+    MOCK_METHOD1(GetSelectReaderState, ErrCode(bool &state));
     MOCK_METHOD1(SetTouchGuideState, bool(const bool state));
     MOCK_METHOD1(SetGestureState, bool(const bool state));
     MOCK_METHOD1(SetKeyEventObserverState, bool(const bool state));
