@@ -225,6 +225,12 @@ ErrCode AccessibleAbilityManagerService::GetScreenReaderState(bool &state)
     return RET_OK;
 }
 
+ErrCode AccessibleAbilityManagerService::GetSelectReaderState(bool &state)
+{
+    (void)state;
+    return RET_OK;
+}
+
 ErrCode AccessibleAbilityManagerService::EnableAbility(const std::string &name,
     const uint32_t capabilities, const bool connectCallBackFlag)
 {
