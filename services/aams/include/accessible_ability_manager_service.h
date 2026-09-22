@@ -166,6 +166,7 @@ public:
     bool GetElementOperator(const int32_t windowId,
         const int64_t elementId, sptr<IAccessibilityElementOperator> &elementOperator);
     ErrCode GetScreenReaderState(bool &state) override;
+    ErrCode GetSelectReaderState(bool &state) override;
     ErrCode GetAccessibilityState(uint32_t &state) override;
     ErrCode SearchNeedEvents(std::vector<uint32_t> &needEvents) override;
     ErrCode GetReadableRules(std::string &readableRules) override;

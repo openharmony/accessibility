@@ -1312,6 +1312,17 @@ ErrCode AccessibleAbilityManagerService::GetScreenReaderState(bool &state)
     return ERR_OK;
 }
 
+ErrCode AccessibleAbilityManagerService::GetSelectReaderState(bool &state)
+{
+    sptr<AccessibilityAccountData> accountData = GetCurrentAccountData();
+    if (!accountData) {
+        HILOG_ERROR("accountData is nullptr");
+        return ERR_INVALID_DATA;
+    }
+    state = accountData->GetSelectReaderState();
+    return ERR_OK;
+}
+
 ErrCode AccessibleAbilityManagerService::GetAccessibilityState(uint32_t &state)
 {
     sptr<AccessibilityAccountData> accountData = GetCurrentAccountData();
