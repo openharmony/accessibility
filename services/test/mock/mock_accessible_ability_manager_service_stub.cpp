@@ -154,6 +154,12 @@ ErrCode MockAccessibleAbilityManagerServiceStub::GetScreenReaderState(bool &stat
     return RET_OK;
 }
 
+ErrCode MockAccessibleAbilityManagerServiceStub::GetSelectReaderState(bool &state)
+{
+    state = selectReaderState_;
+    return RET_OK;
+}
+
 ErrCode MockAccessibleAbilityManagerServiceStub::EnableAbility(const std::string &name, const uint32_t capabilities,
     const bool connectCallBackFlag)
 {

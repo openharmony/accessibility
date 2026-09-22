@@ -105,6 +105,13 @@ public:
     virtual RetError IsScreenReaderEnabled(bool &isEnabled) = 0;
 
     /**
+     * @brief Checks whether select reader ability is enabled.
+     * @param isEnabled true: enabled; false: disabled
+     * @return Returns RET_OK if successful, otherwise refer to the RetError for the failure.
+     */
+    virtual RetError IsSelectReaderEnabled(bool &isEnabled) = 0;
+
+    /**
      * @brief Checks whether accessibility ability is enabled.
      * @param isEnabled true: enabled; false: disabled
      * @return Returns RET_OK if successful, otherwise refer to the RetError for the failure.

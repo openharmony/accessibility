@@ -252,6 +252,13 @@ void AccessibilityAccountData::SetScreenReaderState(const std::string &name, con
     (void)state;
 }
 
+void AccessibilityAccountData::SetSelectReaderState(const std::string &name, const std::string &state)
+{
+    HILOG_DEBUG("start.");
+    (void)name;
+    (void)state;
+}
+
 bool AccessibilityAccountData::GetDefaultUserScreenReaderState()
 {
     HILOG_DEBUG("start.");
@@ -259,6 +266,12 @@ bool AccessibilityAccountData::GetDefaultUserScreenReaderState()
 }
 
 bool AccessibilityAccountData::GetScreenReaderState()
+{
+    HILOG_DEBUG("start.");
+    return true;
+}
+
+bool AccessibilityAccountData::GetSelectReaderState()
 {
     HILOG_DEBUG("start.");
     return true;
