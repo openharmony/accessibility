@@ -210,6 +210,10 @@ void ExtendServiceManager::InitMagnification()
     if (magnificationManager_ == nullptr) {
         magnificationManager_ = MagnificationManager::GetInstance();
     }
+    if (magnificationManager_ != nullptr) {
+        magnificationManager_->GetFullScreenMagnificationManager();
+        magnificationManager_->GetWindowMagnificationManager();
+    }
 
 #ifdef OHOS_BUILD_ENABLE_DISPLAY_MANAGER
     Singleton<AccessibilityDisplayManager>::GetInstance().RegisterDisplayListener(magnificationManager_);
