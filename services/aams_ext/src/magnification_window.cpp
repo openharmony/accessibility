@@ -16,6 +16,7 @@
 // LCOV_EXCL_START
 #include "magnification_window.h"
 #include "visibility.h"
+#include "extend_service_manager.h"
 
 namespace OHOS {
 namespace Accessibility {
@@ -428,6 +429,7 @@ void MagnificationWindow::MoveMagnificationFull(int32_t deltaX, int32_t deltaY)
 
 void MagnificationWindow::ShowMagnificationFull()
 {
+    scale_ = Singleton<ExtendServiceManager>::GetInstance().getMagnificationScaleCallback();
     int32_t centerX = static_cast<int32_t>(screenWidth_ / DIVISOR_TWO);
     int32_t centerY = static_cast<int32_t>(screenHeight_ / DIVISOR_TWO);
     EnableMagnificationFull(centerX, centerY);
@@ -775,6 +777,7 @@ void MagnificationWindow::MoveMagnificationPart(int32_t deltaX, int32_t deltaY)
 
 void MagnificationWindow::ShowMagnificationPart()
 {
+    scale_ = Singleton<ExtendServiceManager>::GetInstance().getMagnificationScaleCallback();
     int32_t centerX = static_cast<int32_t>(screenWidth_ / DIVISOR_TWO);
     int32_t centerY = static_cast<int32_t>(screenHeight_ / DIVISOR_TWO);
     EnableMagnificationPart(centerX, centerY);
